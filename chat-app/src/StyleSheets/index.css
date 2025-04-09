@@ -1,0 +1,30 @@
+:root {
+    /* Base Colors */
+    --bg-main: #141827;
+    --bg-surface: #252B3A;
+  
+    --primary: #4BE9E2;
+    --primary-alt: #38D6C4;
+    --on-primary: #0E151F;
+
+    --primary-star: #48b3ad;
+  
+    --text-main: #F1FAFF;
+    --text-muted: #9BAEC6;
+    --text-disabled: #5C677D;
+  
+    --border: #394150;
+  
+    /* Glow */
+    --glow-cyan: 0 0 12px #4be9e15b, 0 0 24px #4be9e115;
+  
+    /* States */
+    --primary-hover: #5BFAF2;  /* brighter cyan */
+    --primary-active: #30C8BA; /* deeper version of alt */
+  
+    --success: #2FE6A3;
+    --warning: #FFD56F;
+    --error: #FF5F5F;
+    --info: #5EC6FF;
+  }
+  
