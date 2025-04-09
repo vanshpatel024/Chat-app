@@ -93,7 +93,6 @@
     width: 25%;
     border-radius: 20px 0px 0px 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1rem 1rem;
     display: flex;
     flex-direction: column;
     justify-content: end;
@@ -102,6 +101,11 @@
 }
 
 .search-container {
+    display: flex;
+    justify-content: center;
+    align-items: end;
+    padding: 1rem;
+    gap: 20px;
     border-top-left-radius: 20px;
     height: 17%;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -109,7 +113,6 @@
 
 .friends-container {
     height: 75%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .set-log-container {
@@ -121,6 +124,196 @@
     gap: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+.requests-btn {
+    max-width: fit-content;
+    max-height: fit-content;
+    background: rgba(122, 187, 255, 0.08);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    border: 1px solid rgba(122, 187, 255, 0.2);
+    box-shadow: 0 6px 20px rgba(122, 187, 255, 0.1);
+    padding: 0.5rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #89caff;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.requests-btn:hover {
+    background: rgba(122, 187, 255, 0.15);
+    box-shadow: 0 8px 28px rgba(122, 187, 255, 0.25);
+    color: #cce6ff;
+    border-color: rgba(122, 187, 255, 0.4);
+}
+
+.add-friend-btn {
+    max-width: fit-content;
+    max-height: fit-content;
+    background: rgba(75, 233, 226, 0.08);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    border: 1px solid rgba(75, 233, 226, 0.2);
+    box-shadow: 0 6px 20px rgba(75, 233, 226, 0.1);
+    padding: 0.5rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #3feee6;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.add-friend-btn:hover {
+    background: rgba(75, 233, 226, 0.15);
+    box-shadow: 0 8px 28px rgba(75, 233, 226, 0.25);
+    color: #a0fff9;
+    border-color: rgba(75, 233, 226, 0.4);
+}
+
+.requests-btn i,
+.add-friend-btn i {
+    font-size: 1.1rem;
+    margin-top: 1px;
+}
+
+
+.add-friend-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.add-friend-card {
+    background-color: #1F2635;
+    width: min(90vw, 350px);
+    padding: 2rem 1.5rem;
+    border-radius: 20px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.add-friend-card:hover {
+    box-shadow: 0 5px 40px rgba(75, 233, 226, 0.2);
+    border: 1px solid rgba(75, 233, 226, 0.3);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: var(--text-light);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: var(--primary-light);
+}
+
+.friend-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background-color: #1F2635;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+    margin-bottom: 1.2rem;
+}
+
+.friend-input:hover,
+.friend-input:focus {
+    border-color: var(--primary);
+    box-shadow: var(--glow-cyan);
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-result-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a3d;
+    border-radius: 0.5rem;
+    padding: 0.6rem 1rem;
+}
+
+.search-result-card:hover {
+    background: #393959;
+}
+
+.no-results {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.accept-btn,
+.reject-btn {
+    border: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.accept-btn {
+    background-color: #2ec27e;
+}
+
+.accept-btn:hover {
+    background-color: #35db8d;
+    box-shadow: 0 0 10px rgba(46, 194, 126, 0.5);
+}
+
+.reject-btn {
+    background-color: #e74c3c;
+    margin-left: 0.5rem;
+}
+
+.reject-btn:hover {
+    background-color: #ff5e50;
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
 
 /* ----------------------------------------------- RIGHT PANEL ---------------------------------------------- */
 
@@ -170,7 +363,7 @@
 
     backdrop-filter: blur(6px) saturate(120%);
     -webkit-backdrop-filter: blur(6px) saturate(120%);
-    background: rgba(31, 38, 53, 0.2);  
+    background: rgba(31, 38, 53, 0.2);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     border-bottom-right-radius: 20px;
 }
@@ -221,4 +414,3 @@
 
 
 /* --------------------------------------------- MEDIA QUERIES ---------------------------------------------- */
-
