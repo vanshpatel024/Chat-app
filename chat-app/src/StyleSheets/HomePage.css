@@ -108,21 +108,45 @@
     gap: 20px;
     border-top-left-radius: 20px;
     height: 17%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .friends-container {
-    height: 75%;
+    scrollbar-color: rgba(75, 233, 226, 0.3) transparent;
+    scrollbar-width: thin;
+    scroll-behavior: auto;
+    height: 73%;
+    overflow-y: auto;
+}
+
+.friends-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.friends-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.friends-container::-webkit-scrollbar-thumb {
+    background: rgba(75, 233, 226, 0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 4px rgba(75, 233, 226, 0.3);
+}
+
+.friends-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 233, 226, 0.4);
+    box-shadow: 0 0 6px rgba(75, 233, 226, 0.5);
 }
 
 .set-log-container {
     border-bottom-left-radius: 20px;
-    height: 8%;
+    height: 10%;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .requests-btn {
@@ -133,8 +157,8 @@
     -webkit-backdrop-filter: blur(6px) saturate(130%);
     border: 1px solid rgba(122, 187, 255, 0.2);
     box-shadow: 0 6px 20px rgba(122, 187, 255, 0.1);
-    padding: 0.5rem 1.2rem;
-    font-size: 0.95rem;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.90rem;
     font-weight: 500;
     color: #89caff;
     border-radius: 12px;
@@ -160,8 +184,8 @@
     -webkit-backdrop-filter: blur(6px) saturate(130%);
     border: 1px solid rgba(75, 233, 226, 0.2);
     box-shadow: 0 6px 20px rgba(75, 233, 226, 0.1);
-    padding: 0.5rem 1.2rem;
-    font-size: 0.95rem;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.90rem;
     font-weight: 500;
     color: #3feee6;
     border-radius: 12px;
@@ -181,10 +205,9 @@
 
 .requests-btn i,
 .add-friend-btn i {
-    font-size: 1.1rem;
+    font-size: 1rem;
     margin-top: 1px;
 }
-
 
 .add-friend-overlay {
     position: fixed;
@@ -230,7 +253,7 @@
     color: var(--text-muted);
     font-size: 1.2rem;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .close-btn:hover {
@@ -337,7 +360,6 @@
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(5px) saturate(120%);
     -webkit-backdrop-filter: blur(5px) saturate(120%);
-    box-shadow: inset 0 -1px 0 rgba(75, 233, 226, 0.05);
     font-size: 1.1rem;
     font-weight: 500;
     color: var(--text-main);
@@ -412,5 +434,117 @@
     box-shadow: 0 0 12px var(--primary);
 }
 
+.no-chat-selected {
+    color: var(--text-main);
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
 /* --------------------------------------------- MEDIA QUERIES ---------------------------------------------- */
+
+@media screen and (max-width: 1496px) {
+
+    /* .search-container {
+        flex-direction: column;
+        align-items: center;
+    } */
+
+    .requests-btn i,
+    .add-friend-btn i {
+        font-size: 0.9rem;
+        margin-top: 1px;
+    }
+
+    .add-friend-btn {
+        padding: 0.5rem 0.8rem;
+        height: 35px;
+        font-size: 0.75rem;
+    }
+
+    .requests-btn {
+        padding: 0.5rem 0.8rem;
+        height: 35px;
+        font-size: 0.75rem;
+    }
+}
+
+@media screen and (max-width: 1210px) {
+
+    .search-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .add-friend-btn {
+        font-size: 0.85rem;
+    }
+
+    .requests-btn {
+        font-size: 0.85rem;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+        border-radius: 0;
+    }
+
+    .panel-container {
+        flex-direction: column;
+        border-radius: 0;
+    }
+
+    .left-panel,
+    .right-panel {
+        width: 100%;
+        border-radius: 0;
+    }
+
+    .left-panel {
+        height: 35%;
+        order: 2;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .right-panel {
+        height: 65%;
+        order: 1;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .search-container,
+    .set-log-container,
+    .profile-details-container {
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
+        gap: 10px;
+    }
+
+    .set-log-container {
+        height: 15%;
+    }
+
+    .search-container {
+        border-top-left-radius: 0px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        height: auto;
+    }
+
+    .logout-button,
+    .settings-button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .requests-btn,
+    .add-friend-btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 1rem;
+    }
+}

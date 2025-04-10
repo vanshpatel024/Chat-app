@@ -52,3 +52,35 @@
     text-overflow: ellipsis;
     max-width: 180px;
 }
+
+@media screen and (max-width: 480px) {
+    .friend-input {
+        font-size: 0.9rem;
+        padding: 0.6rem 0.9rem;
+    }
+
+    .accept-btn,
+    .reject-btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .search-result-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .app-container {
+        box-shadow: none;
+        border: none;
+    }
+
+    .add-friend-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .popup-header {
+        font-size: 1rem;
+    }
+}

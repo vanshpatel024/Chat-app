@@ -71,19 +71,7 @@
     box-shadow: 0 0 6px rgba(75, 233, 226, 0.5);
 }
 
-.chat-box::-webkit-scrollbar-button {
-    display: none;
-    height: 0;
-    width: 0;
-}
-
-.chat-box::-webkit-scrollbar-button:single-button {
-    display: none;
-    height: 0;
-    width: 0;
-}
-
-/* Firefox support */
+/* firefox */
 .chat-box {
     scrollbar-color: rgba(75, 233, 226, 0.3) transparent;
     scrollbar-width: thin;

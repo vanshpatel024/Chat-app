@@ -15,9 +15,7 @@ import {
     addDoc,
     deleteDoc,
 } from "firebase/firestore";
-
 import { db } from "./Firebase";
-
 import ChatBox from "./ChatBox";
 
 function HomePage() {
@@ -353,15 +351,17 @@ function HomePage() {
                                 {activeChatUser ? (
                                     <p>{activeChatUser.username || activeChatUser.email}</p>
                                 ) : (
-                                    <p>Select a friend to chat</p>
+                                    <></>
+                                    // <p>Select a friend to chat</p>
                                 )}
                             </div>
                             <div className="chat-container">
                                 {chatId ? (
                                     <ChatBox chatId={chatId} />
                                 ) : (
-                                    <></>
-                                    // <p>No chat selected</p>
+                                    <div className="no-chat-selected">
+                                        <p>No chat selected</p>
+                                    </div>
                                 )}
                             </div>
                             <div className="message-field-container">
@@ -381,6 +381,7 @@ function HomePage() {
                         </div>
                     </div>
                 </div>
+
             </div>
         </>
     );
