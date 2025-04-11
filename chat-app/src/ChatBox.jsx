@@ -72,7 +72,7 @@ function ChatBox({ chatId }) {
     
                 {messages.map((msg, index) => {
                     const showTime = shouldShowTimeDivider(messages[index - 1], msg);
-                    const timestamp = msg.timestamp?.toDate?.(); // safe call
+                    const timestamp = msg.timestamp?.toDate?.();
                     const formattedTime = timestamp?.toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -82,15 +82,15 @@ function ChatBox({ chatId }) {
                         <React.Fragment key={msg.id || index}>
                             {showTime && timestamp && (
                                 <div className="time-divider">
-                                    {timestamp.toLocaleString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: true,
-                                        weekday: 'short',
-                                        day: '2-digit',
-                                        month: 'short',
-                                    })}
-                                </div>
+                                {new Intl.DateTimeFormat('en-US', {
+                                    weekday: 'short',
+                                    day: '2-digit',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                }).format(timestamp).replace(/,/g, '')}
+                            </div>
                             )}
     
                             <div className={`chat-message ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>

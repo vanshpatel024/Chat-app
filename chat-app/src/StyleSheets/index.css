@@ -29,3 +29,13 @@
   --error: #FF5F5F;
   --info: #5EC6FF;
 }
+
+* {
+  outline: none;
+  caret-color: transparent;
+}
+
+* input {
+  outline: initial;
+  caret-color: auto;
+}
