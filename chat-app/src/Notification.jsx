@@ -16,9 +16,9 @@ export function NotificationProvider({ children }) {
         if (isProcessing.current || queueRef.current.length === 0) return;
     
         const nextMessage = queueRef.current.shift();
-    
-        // Skip if the message is the same as the last one shown
-        if (nextMessage === lastMessage.current) {
+        
+        //basic auto login notification fix (only showing once)
+        if ("Auto Login Successful!" === lastMessage.current) {
             processQueue();
             return;
         }

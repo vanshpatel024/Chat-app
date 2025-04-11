@@ -42,7 +42,8 @@ function LoginPage() {
     
     //---------------------------------------------------------------------------------------------------------
 
-
+    
+    //auto login
     useEffect(() => {
         const tryAutoLogin = async () => {
             const storedEmail = localStorage.getItem("userEmail");

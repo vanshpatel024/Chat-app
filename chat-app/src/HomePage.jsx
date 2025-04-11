@@ -14,6 +14,7 @@ import {
     collection,
     addDoc,
     deleteDoc,
+    onSnapshot,
 } from "firebase/firestore";
 import { db } from "./Firebase";
 import ChatBox from "./ChatBox";
@@ -42,21 +43,27 @@ function HomePage() {
     const [showRequestsPopup, setShowRequestsPopup] = useState(false);
     const [incomingRequests, setIncomingRequests] = useState([]);
 
+    const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+
+    const [showRemoveFriendPopup, setShowRemoveFriendPopup] = useState(false);
+
 
     //---------------------------------------------------------------------------------------------------------
 
+
     //fetching all the friend ids
     useEffect(() => {
-        const fetchFriendIds = async () => {
-            const friendsRef = collection(db, "users", auth.currentUser.uid, "friends");
-            const snapshot = await getDocs(friendsRef);
+        if (!auth.currentUser) return;
+    
+        const friendsRef = collection(db, "users", auth.currentUser.uid, "friends");
+        const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
             const ids = snapshot.docs.map(doc => doc.id);
             setFriendIds(ids);
-        };
-
-        if (auth.currentUser) fetchFriendIds();
+        });
+    
+        return () => unsubscribe();
     }, []);
-
+    
     //fetching all the friend requests
     useEffect(() => {
         const fetchRequests = async () => {
@@ -91,6 +98,25 @@ function HomePage() {
         setIncomingRequests(prev => prev.filter(u => u.id !== senderId));
         showNotification("Friend request rejected.");
     };
+
+    //listener for realtime adding and removing of friends
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        if (friendIds.length === 0) return;
+    
+        const unsubscribes = friendIds.map((friendId) => {
+            const friendRef = collection(db, "users", friendId, "friends");
+            return onSnapshot(friendRef, () => {
+                setTimeout(() => {
+                    setFriendRefreshToggle(prev => !prev);
+                }, 1000); // 1 second delay
+            });
+        });
+    
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [friendIds]);
 
     //as-you-type search for a friend
     useEffect(() => {
@@ -227,6 +253,34 @@ function HomePage() {
         setMessageText(""); // Clear input
     };
 
+    const handleRemoveFriend = async () => {
+        if (!activeChatUser) return;
+
+        const currentUid = auth.currentUser.uid;
+        const friendUid = activeChatUser.id;
+
+        try {
+            //remove from both users friends subcollections
+            await Promise.all([
+                deleteDoc(doc(db, "users", currentUid, "friends", friendUid)),
+                deleteDoc(doc(db, "users", friendUid, "friends", currentUid)),
+            ]);
+
+            //clear chat state if the removed friend was active
+            setActiveChatUser(null);
+            setChatId(null);
+
+            setFriendIds((prev) => prev.filter((id) => id !== friendUid));
+            setFriendRefreshToggle((prev) => !prev);
+
+            setShowRemoveFriendPopup(false);
+            showNotification("Friend removed successfully.");
+        } catch (error) {
+            console.error("Error removing friend:", error);
+            showNotification("Failed to remove friend. Try again.");
+        }
+    };
+
     // Cancel pending debounce calls on cleanup
     useEffect(() => {
         return () => {
@@ -319,43 +373,124 @@ function HomePage() {
                     </div>
                 )}
 
+                {/* logout popup */}
+                {showLogoutPopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Logout</h2>
+                                <button className="close-btn" onClick={() => setShowLogoutPopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <p className="logout-prompt-text">Are you sure you want to logout?</p>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={handleLogout}>Yes</button>
+                                <button className="accept-btn" onClick={() => setShowLogoutPopup(false)}>No</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* remove friend popup */}
+                {showRemoveFriendPopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Remove Friend</h2>
+
+                                <button className="close-btn" onClick={() => setShowRemoveFriendPopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+
+                            </div>
+
+                            <p className="logout-prompt-text">
+                                Are you sure to remove{' '}
+                                <span style={{ color: 'var(--primary-light)', fontWeight: '500' }}>
+                                    {activeChatUser?.username || activeChatUser?.email}
+                                </span>{' '}
+                                from your friend list?
+                            </p>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={handleRemoveFriend}>Yes</button>
+                                <button className="accept-btn" onClick={() => setShowRemoveFriendPopup(false)}>No</button>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
                 <div className="app-container">
+
                     <div className="panel-container">
+
                         <div className="left-panel">
+
                             <div className="search-container">
+
                                 <button className="requests-btn" onClick={() => setShowRequestsPopup(true)}>
                                     <i className="fas fa-user-friends"></i> Requests
                                 </button>
+
                                 <button className="add-friend-btn" onClick={() => setShowAddFriendPopup(true)}>
                                     <i className="fas fa-user-plus"></i> Add Friend
                                 </button>
+
                             </div>
+
                             <div className="friends-container">
+
                                 <Friends
                                     onFriendClick={handleFriendClick}
                                     selectedFriend={activeChatUser}
                                     refreshTrigger={friendRefreshToggle}
                                 />
+
                             </div>
+
                             <div className="set-log-container">
+
                                 <button className="settings-button">
                                     <i className="fas fa-cog"></i>
                                 </button>
-                                <button className="logout-button" onClick={handleLogout}>
+
+                                <button className="logout-button" onClick={() => setShowLogoutPopup(true)}>
                                     <i className="fas fa-sign-out-alt"></i>
                                 </button>
+
                             </div>
+
                         </div>
+
                         <div className="right-panel">
+
                             <div className="profile-details-container">
+
                                 {activeChatUser ? (
                                     <p>{activeChatUser.username || activeChatUser.email}</p>
                                 ) : (
                                     <></>
                                     // <p>Select a friend to chat</p>
                                 )}
+
+                                {activeChatUser && friendIds.includes(activeChatUser.id) && (
+                                    <button
+                                        className="remove-friend-btn"
+                                        title="Remove Friend"
+                                        onClick={() => setShowRemoveFriendPopup(true)}
+                                    >
+                                        <i className="fas fa-user-minus"></i>
+                                    </button>
+                                )}
+
                             </div>
+
                             <div className="chat-container">
+
                                 {chatId ? (
                                     <ChatBox chatId={chatId} />
                                 ) : (
@@ -363,8 +498,11 @@ function HomePage() {
                                         <p>No chat selected</p>
                                     </div>
                                 )}
+
                             </div>
+
                             <div className="message-field-container">
+
                                 <input
                                     type="text"
                                     placeholder="Type a message..."
@@ -374,17 +512,24 @@ function HomePage() {
                                         if (e.key === "Enter") handleSendMessage();
                                     }}
                                 />
+
                                 <button onClick={handleSendMessage}>
                                     <i className="fas fa-paper-plane"></i>
                                 </button>
+
                             </div>
                         </div>
+
                     </div>
+
                 </div>
 
             </div>
+
         </>
+
     );
+
 }
 
 export default HomePage;

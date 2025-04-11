@@ -7,6 +7,7 @@ import {
   limit,
   getDoc,
   doc,
+  onSnapshot
 } from "firebase/firestore";
 import { db, auth } from "./Firebase";
 import "./StyleSheets/Friends.css";
@@ -22,15 +23,15 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger }) {
       try {
         const friendsRef = collection(db, "users", currentUserId, "friends");
         const friendsSnapshot = await getDocs(friendsRef);
-  
+
         const friendIds = friendsSnapshot.docs.map(doc => doc.id);
         const friendData = [];
-  
+
         for (const id of friendIds) {
           const userDoc = await getDoc(doc(db, "users", id));
           if (userDoc.exists()) {
             friendData.push({ id, ...userDoc.data() });
-  
+
             const chatId = [currentUserId, id].sort().join("_");
             const messagesRef = collection(db, "chats", chatId, "messages");
             const latestQuery = query(messagesRef, orderBy("timestamp", "desc"), limit(1));
@@ -39,16 +40,16 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger }) {
             setLastMessages(prev => ({ ...prev, [id]: lastMessage }));
           }
         }
-  
+
         setUsers(friendData);
       } catch (err) {
         console.error("Error fetching friends: ", err);
       }
     };
-  
+
     if (currentUserId) fetchFriendsAndMessages();
   }, [currentUserId, selectedFriend, refreshTrigger]);
-  
+
   return (
     <div className="friends-list">
       {users.map((user) => (
