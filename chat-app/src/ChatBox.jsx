@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import React from "react";
 import {
     doc,
     collection,
@@ -67,21 +68,21 @@ function ChatBox({ chatId }) {
 
     return (
         <div className="chat-box">
-
             <div className="chat-messages">
-
+    
                 {messages.map((msg, index) => {
                     const showTime = shouldShowTimeDivider(messages[index - 1], msg);
-                    const formattedTime = msg.timestamp?.toDate?.().toLocaleTimeString([], {
+                    const timestamp = msg.timestamp?.toDate?.(); // safe call
+                    const formattedTime = timestamp?.toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
                     });
-
+    
                     return (
-                        <>
-                            {showTime && (
+                        <React.Fragment key={msg.id || index}>
+                            {showTime && timestamp && (
                                 <div className="time-divider">
-                                    {msg.timestamp.toDate().toLocaleString([], {
+                                    {timestamp.toLocaleString([], {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                         hour12: true,
@@ -91,34 +92,27 @@ function ChatBox({ chatId }) {
                                     })}
                                 </div>
                             )}
-
-                            <div key={msg.id} className={`chat-message ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
-
+    
+                            <div className={`chat-message ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
                                 <div className="message-text">{msg.text}</div>
-
-                                {msg.timestamp?.toDate && (
+    
+                                {timestamp && (
                                     <div className={`message-time ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
-                                        {msg.timestamp.toDate().toLocaleTimeString([], {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
+                                        {formattedTime}
                                     </div>
                                 )}
-
                             </div>
-
-
-                        </>
+                        </React.Fragment>
                     );
                 })}
-
+    
                 {typing && <p className="typing-indicator">Typing...</p>}
-
+    
                 <div ref={bottomRef} />
-
+    
             </div>
         </div>
-    );
+    );    
 }
 
 export default ChatBox;
