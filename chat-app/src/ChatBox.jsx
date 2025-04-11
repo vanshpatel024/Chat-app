@@ -55,23 +55,65 @@ function ChatBox({ chatId }) {
         };
     }, [chatId]);
 
+    const shouldShowTimeDivider = (prevMsg, currentMsg) => {
+        if (!prevMsg || !prevMsg.timestamp || !currentMsg.timestamp) return true;
+
+        const prevTime = prevMsg.timestamp.toDate();
+        const currentTime = currentMsg.timestamp.toDate();
+        const diffInMinutes = Math.abs((currentTime - prevTime) / 60000);
+
+        return diffInMinutes > 10;
+    };
+
     return (
         <div className="chat-box">
 
             <div className="chat-messages">
 
-                {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={`chat-message ${msg.sender === auth.currentUser.uid ? "sent" : "received"
-                            }`}
-                    >
-                        {msg.text}
-                    </div>
-                ))}
+                {messages.map((msg, index) => {
+                    const showTime = shouldShowTimeDivider(messages[index - 1], msg);
+                    const formattedTime = msg.timestamp?.toDate?.().toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    return (
+                        <>
+                            {showTime && (
+                                <div className="time-divider">
+                                    {msg.timestamp.toDate().toLocaleString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true,
+                                        weekday: 'short',
+                                        day: '2-digit',
+                                        month: 'short',
+                                    })}
+                                </div>
+                            )}
+
+                            <div key={msg.id} className={`chat-message ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
+
+                                <div className="message-text">{msg.text}</div>
+
+                                {msg.timestamp?.toDate && (
+                                    <div className={`message-time ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
+                                        {msg.timestamp.toDate().toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </div>
+                                )}
+
+                            </div>
+
+
+                        </>
+                    );
+                })}
 
                 {typing && <p className="typing-indicator">Typing...</p>}
-                
+
                 <div ref={bottomRef} />
 
             </div>

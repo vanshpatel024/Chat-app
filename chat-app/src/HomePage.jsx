@@ -454,11 +454,11 @@ function HomePage() {
 
                             <div className="set-log-container">
 
-                                <button className="settings-button">
+                                <button title="Settings" className="settings-button">
                                     <i className="fas fa-cog"></i>
                                 </button>
 
-                                <button className="logout-button" onClick={() => setShowLogoutPopup(true)}>
+                                <button title="Logout" className="logout-button" onClick={() => setShowLogoutPopup(true)}>
                                     <i className="fas fa-sign-out-alt"></i>
                                 </button>
 
@@ -513,7 +513,7 @@ function HomePage() {
                                     }}
                                 />
 
-                                <button onClick={handleSendMessage}>
+                                <button title="Send" onClick={handleSendMessage}>
                                     <i className="fas fa-paper-plane"></i>
                                 </button>
 
