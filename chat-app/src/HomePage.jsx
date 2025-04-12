@@ -18,7 +18,7 @@ import {
     onSnapshot,
 } from "firebase/firestore";
 import { db } from "./Firebase";
-import ChatBox from "./Chatbox";
+import ChatBox from "./ChatBox";
 
 function HomePage() {
     const navigate = useNavigate();
