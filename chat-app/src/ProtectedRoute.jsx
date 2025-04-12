@@ -6,6 +6,7 @@ import { useLoading } from './LoadingContext';
 import "./StyleSheets/LoadingScreen.css";
 
 function ProtectedRoute({ children }) {
+    const { showNotification } = useNotification();
     const [isAuthenticated, setIsAuthenticated] = useState(null);
     const { showLoading, hideLoading } = useLoading();
 
@@ -25,6 +26,10 @@ function ProtectedRoute({ children }) {
 
     if (isAuthenticated === null) {
         return null;
+    }
+
+    if (isAuthenticated){
+        showNotification("Auto Login Successful!");
     }
 
     return isAuthenticated ? children : <Navigate to="/login" />;

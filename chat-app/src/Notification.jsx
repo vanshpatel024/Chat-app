@@ -18,7 +18,7 @@ export function NotificationProvider({ children }) {
         const nextMessage = queueRef.current.shift();
         
         //basic auto login notification fix (only showing once)
-        if ("Auto Login Successful!" === lastMessage.current) {
+        if (lastMessage.current === "Auto Login Successful!" && nextMessage === "Auto Login Successful!") {
             processQueue();
             return;
         }

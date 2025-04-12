@@ -14,10 +14,11 @@ import {
     collection,
     addDoc,
     deleteDoc,
+    updateDoc,
     onSnapshot,
 } from "firebase/firestore";
 import { db } from "./Firebase";
-import ChatBox from "./ChatBox";
+import ChatBox from "./Chatbox";
 
 function HomePage() {
     const navigate = useNavigate();
@@ -47,23 +48,66 @@ function HomePage() {
 
     const [showRemoveFriendPopup, setShowRemoveFriendPopup] = useState(false);
 
+    const [userStatus, setUserStatus] = useState(activeChatUser?.status || "offline");
+
 
     //---------------------------------------------------------------------------------------------------------
 
 
+    useEffect(() => {
+        if (activeChatUser) {
+            // Listen to real-time updates for the user's status
+            const userRef = doc(db, "users", activeChatUser.id); // Change this to your user document path
+
+            const unsubscribe = onSnapshot(userRef, (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    setUserStatus(docSnapshot.data().status); // Update the status in real-time
+                }
+            });
+
+            // Clean up the listener on component unmount or when activeChatUser changes
+            return () => unsubscribe();
+        }
+    }, [activeChatUser]);
+
     //fetching all the friend ids
     useEffect(() => {
-        if (!auth.currentUser) return;
-    
-        const friendsRef = collection(db, "users", auth.currentUser.uid, "friends");
-        const unsubscribe = onSnapshot(friendsRef, (snapshot) => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const userDocRef = doc(db, "users", user.uid);
+        const friendsRef = collection(db, "users", user.uid, "friends");
+
+        const setUserStatus = async (status) => {
+            const snap = await getDoc(userDocRef);
+            if (snap.exists()) {
+                await updateDoc(userDocRef, { status });
+            } else {
+                await setDoc(userDocRef, { status }, { merge: true });
+            }
+        };
+
+        // Set user online on page load
+        setUserStatus("online");
+
+        // Listen to changes in the "friends" subcollection
+        const unsubscribeFriends = onSnapshot(friendsRef, (snapshot) => {
             const ids = snapshot.docs.map(doc => doc.id);
-            setFriendIds(ids);
+            setFriendIds(ids); // <- assumes you have this state setter declared in your component
         });
-    
-        return () => unsubscribe();
+
+        // Handle browser/tab close
+        const handleBeforeUnload = () => setUserStatus("offline");
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        // Cleanup
+        return () => {
+            setUserStatus("offline");
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+            unsubscribeFriends();
+        };
     }, []);
-    
+
     //fetching all the friend requests
     useEffect(() => {
         const fetchRequests = async () => {
@@ -103,7 +147,7 @@ function HomePage() {
     useEffect(() => {
         if (!auth.currentUser) return;
         if (friendIds.length === 0) return;
-    
+
         const unsubscribes = friendIds.map((friendId) => {
             const friendRef = collection(db, "users", friendId, "friends");
             return onSnapshot(friendRef, () => {
@@ -112,7 +156,7 @@ function HomePage() {
                 }, 1000); // 1 second delay
             });
         });
-    
+
         return () => {
             unsubscribes.forEach(unsub => unsub());
         };
@@ -469,9 +513,20 @@ function HomePage() {
                         <div className="right-panel">
 
                             <div className="profile-details-container">
-
                                 {activeChatUser ? (
-                                    <p>{activeChatUser.username || activeChatUser.email}</p>
+                                    <div className="prof-container">
+
+                                        <i className="fas fa-user user-icon"></i>
+
+                                        <div className="usnm-status-container">
+                                            <p>{activeChatUser.username || activeChatUser.email}</p>
+                                            {/* Display online/offline status */}
+                                            <p className={`status-text ${userStatus === "online" ? "online" : "offline"}`}>
+                                                {userStatus === "online" ? "Online" : "Offline"}
+                                            </p>
+                                        </div>
+
+                                    </div>
                                 ) : (
                                     <></>
                                     // <p>Select a friend to chat</p>
@@ -486,7 +541,6 @@ function HomePage() {
                                         <i className="fas fa-user-minus"></i>
                                     </button>
                                 )}
-
                             </div>
 
                             <div className="chat-container">

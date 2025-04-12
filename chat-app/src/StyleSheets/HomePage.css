@@ -295,6 +295,30 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    max-height: 150px;
+    overflow-y: auto;
+    scrollbar-color: rgba(75, 233, 226, 0.3) transparent;
+    scrollbar-width: thin;
+}
+
+.search-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: rgba(75, 233, 226, 0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 4px rgba(75, 233, 226, 0.3);
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 233, 226, 0.4);
+    box-shadow: 0 0 6px rgba(75, 233, 226, 0.5);
 }
 
 .search-result-card {
@@ -306,6 +330,7 @@
     padding: 0.65rem 1rem;
     color: var(--text-main);
     transition: all 0.2s ease;
+    margin-right: 10px;
 }
 
 .search-result-card:hover {
@@ -404,6 +429,7 @@
         opacity: 0;
         transform: scale(0.96);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -443,6 +469,32 @@
     margin: 0;
     color: var(--primary);
     text-shadow: 0 0 6px rgba(75, 233, 226, 0.2);
+}
+
+.prof-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.usnm-status-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.status-text {
+    font-size: 0.8rem;
+    color: var(--text-main);
+    margin-top: 3px;
+}
+
+.status-text.online {
+    color: green;
+    /* Green for online */
+}
+
+.status-text.offline {
+    color: #e745458f;
 }
 
 .chat-container {

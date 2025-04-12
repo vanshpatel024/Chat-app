@@ -22,10 +22,34 @@
     border-color: rgba(75, 233, 226, 0.3);
 }
 
+.friend-online {
+    border-color: rgba(76, 255, 100, 0.5);
+    box-shadow: 0 0 20px rgba(76, 255, 100, 0.25);
+    background: rgba(16, 21, 22, 0.16);
+    transition: all 0.3s ease;
+    animation: vibrantGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes vibrantGlow {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(76, 255, 100, .1);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(76, 255, 100, .15);
+    }
+}
+
 .user-icon {
     font-size: 1.8rem;
     color: var(--text-muted);
     margin-right: 12px;
+    transition: all 0.3 ease;
+}
+
+.glow-green {
+    color: #4caf50;
+    border-radius: 50%;
+    transition: all 0.3 ease;
 }
 
 .user-info {
@@ -52,6 +76,24 @@
     text-overflow: ellipsis;
     max-width: 180px;
 }
+
+.status-dot {
+    margin-left: 8px;
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    border-radius: 50%;
+    background-color: gray;
+}
+
+.status-dot.online {
+    background-color: limegreen;
+}
+
+.status-dot.offline {
+    background-color: red;
+}
+
 
 @media screen and (max-width: 480px) {
     .friend-input {
