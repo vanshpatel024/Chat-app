@@ -4,6 +4,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "./Firebase";
 import { useNotification } from "./Notification";
 import "./StyleSheets/HomePage.css";
+import ChatBox from "./ChatBox.jsx";
 import Friends from "./Friends";
 import {
     doc,
@@ -18,7 +19,6 @@ import {
     onSnapshot,
 } from "firebase/firestore";
 import { db } from "./Firebase";
-import ChatBox from "./ChatBox";
 
 function HomePage() {
     const navigate = useNavigate();
@@ -396,23 +396,25 @@ function HomePage() {
                                     <i className="fas fa-times"></i>
                                 </button>
                             </div>
-                            {incomingRequests.length === 0 ? (
-                                <p className="no-results">No pending requests</p>
-                            ) : (
-                                incomingRequests.map((user) => (
-                                    <div key={user.id} className="search-result-card">
-                                        <span>{user.username}</span>
-                                        <div>
-                                            <button className="accept-btn" onClick={() => handleAccept(user.id)}>
-                                                <i className="fas fa-check"></i>
-                                            </button>
-                                            <button className="reject-btn" onClick={() => handleReject(user.id)}>
-                                                <i className="fas fa-times"></i>
-                                            </button>
+                            <div className="search-results">
+                                {incomingRequests.length === 0 ? (
+                                    <p className="no-results">No pending requests</p>
+                                ) : (
+                                    incomingRequests.map((user) => (
+                                        <div key={user.id} className="search-result-card">
+                                            <span>{user.username}</span>
+                                            <div>
+                                                <button className="accept-btn" onClick={() => handleAccept(user.id)}>
+                                                    <i className="fas fa-check"></i>
+                                                </button>
+                                                <button className="reject-btn" onClick={() => handleReject(user.id)}>
+                                                    <i className="fas fa-times"></i>
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
-                            )}
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
