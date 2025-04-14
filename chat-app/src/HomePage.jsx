@@ -430,8 +430,6 @@ function HomePage() {
             
             if (error.code === "auth/invalid-credential") {
                 showNotification("Current password is incorrect.");
-            } else {
-                showNotification("Failed to change password. Please try again.");
             }
         } finally {
             hideLoading();
