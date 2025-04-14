@@ -74,8 +74,11 @@ function LoginPage() {
             }
         };
 
-        tryAutoLogin();
-    }, [hasAutoLoggedIn, isManualLogin, navigate, showNotification]);
+        if (!hasAutoLoggedIn) {  // Run the effect only if auto-login has not happened yet
+            tryAutoLogin();
+        }
+        
+    }, [hasAutoLoggedIn, isManualLogin, navigate]);
 
     const handleGoogleLogIn = async () => {
         try {

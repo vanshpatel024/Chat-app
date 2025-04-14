@@ -24,12 +24,14 @@ function ProtectedRoute({ children }) {
         };
     }, []);
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            showNotification("Auto Login Successful!");
+        }
+    }, [isAuthenticated]);
+
     if (isAuthenticated === null) {
         return null;
-    }
-
-    if (isAuthenticated){
-        showNotification("Auto Login Successful!");
     }
 
     return isAuthenticated ? children : <Navigate to="/login" />;

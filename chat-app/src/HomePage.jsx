@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth } from "./Firebase";
+import { auth, db } from "./Firebase";
 import { useNotification } from "./Notification";
+import { useLoading } from './LoadingContext';
 import "./StyleSheets/HomePage.css";
-import ChatBox from "./ChatBox.jsx";
+import ChatBox from "./ChatBox";
 import Friends from "./Friends";
+import { signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import {
+    query,
+    where,
     doc,
     getDoc,
     getDocs,
@@ -18,11 +21,11 @@ import {
     updateDoc,
     onSnapshot,
 } from "firebase/firestore";
-import { db } from "./Firebase";
 
 function HomePage() {
     const navigate = useNavigate();
     const { showNotification } = useNotification();
+    const { showLoading, hideLoading } = useLoading();
 
     const [activeChatUser, setActiveChatUser] = useState(null); // user object
     const [chatId, setChatId] = useState(null);
@@ -48,12 +51,24 @@ function HomePage() {
 
     const [showRemoveFriendPopup, setShowRemoveFriendPopup] = useState(false);
 
+    const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+
     const [userStatus, setUserStatus] = useState(activeChatUser?.status || "offline");
+
+    const [showChangeUsernamePopup, setShowChangeUsernamePopup] = useState(false);
+    const [newUsername, setNewUsername] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+
+    const [showChangePasswordPopup, setShowChangePasswordPopup] = useState(false);
+    const [newPassword, setNewPassword] = useState("");
+    const [currentPasswordForNewPassword, setCurrentPasswordForNewPassword] = useState("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
 
     //---------------------------------------------------------------------------------------------------------
 
 
+    //function to listen to the active chat user and update their status in real-time
     useEffect(() => {
         if (activeChatUser) {
             // Listen to real-time updates for the user's status
@@ -191,6 +206,7 @@ function HomePage() {
         return () => clearTimeout(delayDebounce);
     }, [searchUsername, friendIds]);
 
+    //function to handle adding a friend
     const handleAddFriend = async (friendId) => {
         const yourRequestRef = doc(db, "users", currentUid, "friendRequests", friendId);
         const theirRequestRef = doc(db, "users", friendId, "friendRequests", currentUid);
@@ -249,6 +265,7 @@ function HomePage() {
         }
     };
 
+    //function to update typing status in Firestore
     const updateTypingStatus = async (isTyping) => {
         if (!chatId) return;
 
@@ -267,6 +284,7 @@ function HomePage() {
         );
     };
 
+    //function to handle input change and typing status
     const handleInputChange = (e) => {
         setMessageText(e.target.value);
 
@@ -284,6 +302,7 @@ function HomePage() {
         }, 2000);
     };
 
+    //function to send message
     const handleSendMessage = async () => {
         if (!messageText.trim() || !chatId) return;
 
@@ -297,6 +316,7 @@ function HomePage() {
         setMessageText(""); // Clear input
     };
 
+    //function to remove friend
     const handleRemoveFriend = async () => {
         if (!activeChatUser) return;
 
@@ -325,15 +345,100 @@ function HomePage() {
         }
     };
 
-    // Cancel pending debounce calls on cleanup
-    useEffect(() => {
-        return () => {
-            if (typingTimeout.current) {
-                clearTimeout(typingTimeout.current);
-            }
-        };
-    }, [chatId]);
+    //function to change username
+    const handleChangeUsername = async () => {
+        if (!newUsername.trim()) return showNotification("Please enter a new username.");
+        if (!currentPassword.trim()) return showNotification("Please enter your current password.");
 
+        const user = auth.currentUser;
+        const trimmedUsername = newUsername.trim();
+
+        if (!user || !user.email) {
+            return showNotification("No user is currently logged in.");
+        }
+
+        try {
+            showLoading();
+
+            //check if username is already taken
+            const usersRef = collection(db, "users");
+            const usernameQuery = query(usersRef, where("username", "==", trimmedUsername));
+            const snapshot = await getDocs(usernameQuery);
+
+            const usernameTaken = snapshot.docs.some(doc => doc.id !== user.uid);
+
+            if (usernameTaken) {
+                hideLoading();
+                return showNotification("Username is already taken. Please choose another one.");
+            }
+
+            //reauthenticate user
+            const credential = EmailAuthProvider.credential(user.email, currentPassword);
+            await reauthenticateWithCredential(user, credential);
+
+            //update username in Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            await updateDoc(userDocRef, {
+                username: newUsername.trim(),
+            });
+
+            //success
+            showNotification("Username changed successfully!");
+            setShowChangeUsernamePopup(false);
+            setNewUsername("");
+            setCurrentPassword("");
+
+        } catch (error) {
+            console.error("Error changing username:", error);
+            const message = error.code === "auth/invalid-credential"
+                ? "Incorrect current password."
+                : "Failed to change username. Try again.";
+
+            showNotification(message);
+        } finally {
+            hideLoading();
+        }
+    };
+
+    //function to change password
+    const handleChangePassword = async () => {
+        if (!currentPasswordForNewPassword.trim()) return showNotification("Please enter your current password.");
+        if (!newPassword.trim()) return showNotification("Please enter a new password.");
+        if (!confirmNewPassword.trim()) return showNotification("Please confirm your new password.");
+        if (newPassword !== confirmNewPassword) return showNotification("Passwords do not match.");
+    
+        try {
+            showLoading();
+
+            const user = auth.currentUser;
+            const credential = EmailAuthProvider.credential(user.email, currentPasswordForNewPassword);
+    
+            await reauthenticateWithCredential(user, credential);
+    
+            //if reauthentication is successful, update the password
+            await updatePassword(user, newPassword);
+    
+            showNotification("Password changed successfully!");
+    
+            setCurrentPasswordForNewPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
+            showChangePasswordPopup(false);
+    
+        } catch (error) {
+            console.error("Error changing password:", error.message);
+            
+            if (error.code === "auth/invalid-credential") {
+                showNotification("Current password is incorrect.");
+            } else {
+                showNotification("Failed to change password. Please try again.");
+            }
+        } finally {
+            hideLoading();
+        }
+    };
+
+    //function to handle logout
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -346,6 +451,15 @@ function HomePage() {
             showNotification("Logout failed. Try again.");
         }
     };
+
+    // Cancel pending debounce calls on cleanup
+    useEffect(() => {
+        return () => {
+            if (typingTimeout.current) {
+                clearTimeout(typingTimeout.current);
+            }
+        };
+    }, [chatId]);
 
     return (
         <>
@@ -470,6 +584,90 @@ function HomePage() {
                     </div>
                 )}
 
+                {/* change username popup */}
+                {showChangeUsernamePopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Change Username</h2>
+
+                                <button className="close-btn" onClick={() => setShowChangeUsernamePopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div className="change-username-form">
+                                <input
+                                    id="new-username"
+                                    type="text"
+                                    value={newUsername}
+                                    onChange={(e) => setNewUsername(e.target.value)}
+                                    placeholder="Enter new username"
+                                    className="input-field"
+                                />
+
+                                <input
+                                    id="current-password"
+                                    type="password"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    placeholder="Enter your password"
+                                    className="input-field"
+                                />
+                            </div>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={() => setShowChangeUsernamePopup(false)}>Cancel</button>
+                                <button className="accept-btn" onClick={handleChangeUsername}>Change</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* change password popup */}
+                {showChangePasswordPopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Change Password</h2>
+                                <button className="close-btn" onClick={() => setShowChangePasswordPopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div className="change-password-form">
+                                <input
+                                    type="password"
+                                    placeholder="Current Password"
+                                    className="popup-input"
+                                    value={currentPasswordForNewPassword}
+                                    onChange={(e) => setCurrentPasswordForNewPassword(e.target.value)}
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="New Password"
+                                    className="popup-input"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="Confirm New Password"
+                                    className="popup-input"
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={() => setShowChangePasswordPopup(false)}>Cancel</button>
+                                <button className="accept-btn" onClick={handleChangePassword}>Change</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Main App Container */}
                 <div className="app-container">
 
                     <div className="panel-container">
@@ -494,20 +692,46 @@ function HomePage() {
                                     onFriendClick={handleFriendClick}
                                     selectedFriend={activeChatUser}
                                     refreshTrigger={friendRefreshToggle}
+                                    setRefreshTrigger={setFriendRefreshToggle}
                                 />
 
                             </div>
 
                             <div className="set-log-container">
+                                <div className="settings-wrapper">
+                                    <button
+                                        title="Settings"
+                                        className="settings-button"
+                                        onClick={() => setShowSettingsDropdown((prev) => !prev)}
+                                    >
+                                        <i className="fas fa-cog"></i>
+                                    </button>
 
-                                <button title="Settings" className="settings-button">
-                                    <i className="fas fa-cog"></i>
-                                </button>
+                                    {showSettingsDropdown && (
+                                        <div className="settings-dropdown">
+                                            <button className="dropdown-option" onClick={() => {
+                                                setShowSettingsDropdown(false);
+                                                setShowChangeUsernamePopup(true);
+                                            }}>
+                                                <i className="fas fa-user-edit"></i> Change Username
+                                            </button>
+                                            <button className="dropdown-option" onClick={() => {
+                                                setShowSettingsDropdown(false);
+                                                setShowChangePasswordPopup(true);
+                                            }}>
+                                                <i className="fas fa-key"></i> Change Password
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
 
-                                <button title="Logout" className="logout-button" onClick={() => setShowLogoutPopup(true)}>
+                                <button
+                                    title="Logout"
+                                    className="logout-button"
+                                    onClick={() => setShowLogoutPopup(true)}
+                                >
                                     <i className="fas fa-sign-out-alt"></i>
                                 </button>
-
                             </div>
 
                         </div>
