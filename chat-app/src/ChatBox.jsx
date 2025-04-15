@@ -27,29 +27,18 @@ function ChatBox({ chatId }) {
 
 
     //---------------------------------------------------------------------------------------------------------
-    //check on mouse leave for delete button
 
 
+    //check if mouse is hovering over delete button
     const handleMouseEnter = (id) => {
         clearTimeout(timeoutRef.current);
         setFadingOut(false); // Stop any ongoing fade-out when hovering on the message
         setHoveredMsgId(id);
     };
 
-    const handleMouseLeave = () => {
-        setTimeout(() => {
-            if (!isHoveringDeleteButton) {
-                setFadingOut(true);
-                timeoutRef.current = setTimeout(() => {
-                    setHoveredMsgId(null);
-                    setFadingOut(false);
-                }, 500);
-            }   
-        }, 500);
-    };
-
-    useEffect(() => {
-        const hoverCheck = setTimeout(() => {
+    //mouse leave check for delete button
+    const runCheckHoverTimeout = () => {
+        const timeout = setTimeout(() => {
             if (!isHoveringDeleteButton) {
                 setFadingOut(true);
                 timeoutRef.current = setTimeout(() => {
@@ -58,9 +47,15 @@ function ChatBox({ chatId }) {
                 }, 500);
             }
         }, 1000);
+    
+        return timeout;
+    };
 
-        return () => clearTimeout(hoverCheck);
+    useEffect(() => {
+        const timeout = runCheckHoverTimeout();
+        return () => clearTimeout(timeout);
     }, [isHoveringDeleteButton]);
+    
     
     useEffect(() => {
         if (!chatId) return;
@@ -151,7 +146,9 @@ function ChatBox({ chatId }) {
                             <div
                                 className={`chat-message ${isSender ? "sent" : "received"}`}
                                 onMouseEnter={() => handleMouseEnter(msg.id || index)}
-                                onMouseLeave={handleMouseLeave}
+                                onMouseLeave={() => {
+                                    runCheckHoverTimeout();
+                                }}
                             >
 
                                 <div className="message-text">{msg.text}</div>
@@ -168,8 +165,8 @@ function ChatBox({ chatId }) {
                                         onClick={() => handleDeleteMessage(msg.id)}
                                         onMouseEnter={() => setIsHoveringDeleteButton(true)}
                                         onMouseLeave={() => {
-                                            setIsHoveringDeleteButton(false)
-                                            checkHover();
+                                            setIsHoveringDeleteButton(false);
+                                            runCheckHoverTimeout();
                                         }}
                                     >
                                         <i className="fas fa-trash"></i>

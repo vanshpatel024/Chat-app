@@ -51,6 +51,8 @@ function HomePage() {
 
     const [showRemoveFriendPopup, setShowRemoveFriendPopup] = useState(false);
 
+    const [showClearChatPopup, setShowClearChatPopup] = useState(false);
+
     const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
 
     const [userStatus, setUserStatus] = useState(activeChatUser?.status || "offline");
@@ -63,6 +65,8 @@ function HomePage() {
     const [newPassword, setNewPassword] = useState("");
     const [currentPasswordForNewPassword, setCurrentPasswordForNewPassword] = useState("");
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
+
+    const [showProfilePopup, setShowProfilePopup] = useState(false);
 
 
     //---------------------------------------------------------------------------------------------------------
@@ -345,6 +349,25 @@ function HomePage() {
         }
     };
 
+    const handleClearChat = async () => {
+        if (!chatId) return;
+
+        try {
+            const messagesRef = collection(db, "chats", chatId, "messages");
+            const snapshot = await getDocs(messagesRef);
+
+            const deletePromises = snapshot.docs.map((docSnap) =>
+                deleteDoc(doc(db, "chats", chatId, "messages", docSnap.id))
+            );
+
+            await Promise.all(deletePromises);
+            showNotification("Chat cleared successfully!");
+        } catch (err) {
+            console.error("Error clearing chat:", err);
+            showNotification("Failed to clear chat. Try again.");
+        }
+    };
+
     //function to change username
     const handleChangeUsername = async () => {
         if (!newUsername.trim()) return showNotification("Please enter a new username.");
@@ -406,28 +429,28 @@ function HomePage() {
         if (!newPassword.trim()) return showNotification("Please enter a new password.");
         if (!confirmNewPassword.trim()) return showNotification("Please confirm your new password.");
         if (newPassword !== confirmNewPassword) return showNotification("Passwords do not match.");
-    
+
         try {
             showLoading();
 
             const user = auth.currentUser;
             const credential = EmailAuthProvider.credential(user.email, currentPasswordForNewPassword);
-    
+
             await reauthenticateWithCredential(user, credential);
-    
+
             //if reauthentication is successful, update the password
             await updatePassword(user, newPassword);
-    
+
             showNotification("Password changed successfully!");
-    
+
             setCurrentPasswordForNewPassword('');
             setNewPassword('');
             setConfirmNewPassword('');
             showChangePasswordPopup(false);
-    
+
         } catch (error) {
             console.error("Error changing password:", error.message);
-            
+
             if (error.code === "auth/invalid-credential") {
                 showNotification("Current password is incorrect.");
             }
@@ -458,6 +481,8 @@ function HomePage() {
             }
         };
     }, [chatId]);
+
+
 
     return (
         <>
@@ -547,6 +572,40 @@ function HomePage() {
                             <div className="logout-button-wrapper">
                                 <button className="reject-btn" onClick={handleLogout}>Yes</button>
                                 <button className="accept-btn" onClick={() => setShowLogoutPopup(false)}>No</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* clear chat popup */}
+                {showClearChatPopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Clear Chat</h2>
+                                <button className="close-btn" onClick={() => setShowClearChatPopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <p className="logout-prompt-text">
+                                Are you sure you want to clear all chat messages with{' '}
+                                <span style={{ color: 'var(--primary-light)', fontWeight: '500' }}>
+                                    {activeChatUser?.username || activeChatUser?.email}
+                                </span>
+                                ?
+                            </p>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={async () => {
+                                    await handleClearChat();
+                                    setShowClearChatPopup(false);
+                                }}>
+                                    Yes
+                                </button>
+                                <button className="accept-btn" onClick={() => setShowClearChatPopup(false)}>
+                                    No
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -665,6 +724,41 @@ function HomePage() {
                     </div>
                 )}
 
+                {/* profile details popup */}
+                {showProfilePopup && (
+                    <div className="add-friend-overlay">
+                        <div className="add-friend-card">
+                            <div className="popup-header">
+                                <h2>Profile Details</h2>
+                                <button className="close-btn" onClick={() => setShowProfilePopup(false)}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+
+                            <div className="details-container">
+                                <div className="profile-field">
+                                    <label>Username:</label>
+                                    <span>{auth.currentUser?.displayName || "N/A"}</span>
+                                </div>
+                                <div className="profile-field">
+                                    <label>Email:</label>
+                                    <span>{auth.currentUser?.email}</span>
+                                </div>
+                                <div className="profile-field">
+                                    <label>Account Created:</label>
+                                    <span>{new Date(auth.currentUser?.metadata.creationTime).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="logout-button-wrapper">
+                                <button className="reject-btn" onClick={() => setShowProfilePopup(false)}>Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
                 {/* Main App Container */}
                 <div className="app-container">
 
@@ -719,6 +813,15 @@ function HomePage() {
                                             }}>
                                                 <i className="fas fa-key"></i> Change Password
                                             </button>
+                                            <button
+                                                className="dropdown-option"
+                                                onClick={() => {
+                                                    setShowSettingsDropdown(false);
+                                                    setShowProfilePopup(true);
+                                                }}
+                                            >
+                                                <i className="fas fa-user-circle"></i> Profile Details
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -757,13 +860,24 @@ function HomePage() {
                                 )}
 
                                 {activeChatUser && friendIds.includes(activeChatUser.id) && (
-                                    <button
-                                        className="remove-friend-btn"
-                                        title="Remove Friend"
-                                        onClick={() => setShowRemoveFriendPopup(true)}
-                                    >
-                                        <i className="fas fa-user-minus"></i>
-                                    </button>
+                                    <div className="misc-buttons">
+                                        <button
+                                            className="remove-friend-btn"
+                                            title="Clear Chat"
+                                            onClick={() => setShowClearChatPopup(true)}
+                                        >
+                                            <i className="fas fa-trash-alt"></i>
+                                        </button>
+
+
+                                        <button
+                                            className="remove-friend-btn"
+                                            title="Remove Friend"
+                                            onClick={() => setShowRemoveFriendPopup(true)}
+                                        >
+                                            <i className="fas fa-user-minus"></i>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 
