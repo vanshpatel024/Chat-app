@@ -482,8 +482,6 @@ function HomePage() {
         };
     }, [chatId]);
 
-
-
     return (
         <>
             <div className="main-container">

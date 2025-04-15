@@ -22,6 +22,11 @@ export function NotificationProvider({ children }) {
             processQueue();
             return;
         }
+
+        if (lastMessage.current === "Login successful!" && nextMessage === "Auto Login Successful!") {
+            processQueue();
+            return;
+        }
     
         lastMessage.current = nextMessage;
     
