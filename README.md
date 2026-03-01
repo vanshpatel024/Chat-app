@@ -1,48 +1,66 @@
-# 💬 Quick Chat — Realtime Web Chat App
+# Quick Chat — Realtime Web Chat App
 
-**Quick Chat** is a sleek, responsive, and realtime chat web app built using **React + Vite** on the frontend and **Firebase** on the backend. Designed with a modern glassy neon aesthetic, the app allows you to quickly and effortlessly chat with your friends in real-time — no fuss, just chat.
+Quick Chat is a sleek, responsive, real-time chat web application built using React + Vite on the frontend and Firebase on the backend. It provides seamless real-time communication with a modern, minimal glass-inspired interface designed for smooth and intuitive user interaction.
 
-## 🔗 Live Demo
-▶️ [Use the App](https://chat-app-psi-seven-47.vercel.app/)
-
-## 📦 Tech Stack
-- **Frontend:** React, Vite, CSS (glassmorphism/neon theme)
-- **Backend:** Firebase (Auth, Firestore, Realtime Updates)
-
-## ✨ Features
-
-### 🔐 Authentication
-- Sign up with email/password or Google
-- Forgot password flow
-- View & update account info (username, password)
-
-### 💬 Chat System
-- Realtime messaging with instant updates via Firebase
-- Chat timestamps on hover
-- Delete individual messages or clear chat entirely
-- Typing indicators and online/offline status in real-time
-
-### 👥 Friends Management
-- Add, remove, and search for friends
-- Online status indicators in friend list
-- Notification bubble for new messages
-
-### 🧠 UI/UX
-- Smooth animations and transitions
-- Glassy-neon aesthetic with retro-inspired styling
-- Fully responsive — works across desktop, tablet, and mobile
+## Live Demo
+https://chat-app-psi-seven-47.vercel.app/
 
 ---
 
-## 🚀 Getting Started
+## Tech Stack
+
+### Frontend
+- React
+- Vite
+- CSS (Custom glassmorphism theme)
+
+### Backend
+- Firebase Authentication
+- Firestore Database
+- Real-time listeners
+
+---
+
+## Features
+
+### Authentication
+- Email and password registration
+- Google sign-in
+- Password reset functionality
+- Update account details (username and password)
+
+### Real-Time Chat System
+- Instant messaging with real-time updates
+- Message timestamps (visible on hover)
+- Delete individual messages
+- Clear entire conversations
+- Typing indicators
+- Online/offline presence tracking
+
+### Friends Management
+- Add and remove friends
+- Search users
+- Real-time online status indicators
+- Unread message notification badges
+
+### UI/UX
+- Smooth transitions and subtle animations
+- Modern glass-style interface
+- Fully responsive design (desktop, tablet, mobile)
+
+---
+
+## Getting Started
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone https://github.com/vanshpatel024/Chat-app.git
+
+# Navigate into the project directory
 cd Chat-app
 
 # Install dependencies
 npm install
 
-# Start the dev server
+# Start the development server
 npm run dev
