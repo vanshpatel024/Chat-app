@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import './StyleSheets/LoginPage.css';
 import { useNotification } from './Notification';
-import { auth, googleProvider } from "./Firebase";
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, updateProfile } from "firebase/auth";
+import { auth } from "./Firebase";
+import { getRedirectResult, signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, updateProfile } from "firebase/auth";
 import { useLoading } from './LoadingContext';
 import { processGoogleUserAuth } from './authUtils';
-import InAppBrowserBanner from './InAppBrowserBanner';
+import GoogleDisabledModal from './GoogleDisabledModal';
 
 import {
     createUserProfile,
@@ -24,6 +24,7 @@ function LoginPage() {
     const [isManualLogin, setIsManualLogin] = useState(false);
 
     const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [showGoogleDisabledModal, setShowGoogleDisabledModal] = useState(false);
 
     const navigate = useNavigate();
 
@@ -152,42 +153,7 @@ function LoginPage() {
 
     const handleGoogleLogIn = (e) => {
         if (e && e.preventDefault) e.preventDefault();
-
-        // 1. Direct synchronous popup initiation within user gesture
-        signInWithPopup(auth, googleProvider)
-            .then(async (result) => {
-                if (!result || !result.user) return;
-                showLoading();
-                setIsManualLogin(true);
-                await processGoogleUser(result.user);
-            })
-            .catch(async (error) => {
-                console.error("Google login error:", error);
-                if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                    hideLoading();
-                    return; // Ignore silently and reset UI
-                }
-                if (error.code === 'auth/popup-blocked') {
-                    // Attempt fallback to signInWithRedirect using first-party authDomain
-                    try {
-                        showLoading();
-                        await signInWithRedirect(auth, googleProvider);
-                        return;
-                    } catch (redirectErr) {
-                        console.error("Redirect fallback error:", redirectErr);
-                        hideLoading();
-                        showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
-                        return;
-                    }
-                }
-                if (error.code === 'auth/unauthorized-domain') {
-                    hideLoading();
-                    showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
-                    return;
-                }
-                hideLoading();
-                showNotification("Google login failed. Try again.");
-            });
+        setShowGoogleDisabledModal(true);
     };
 
     const handleLogin = async () => {
@@ -317,7 +283,11 @@ function LoginPage() {
 
     return (
         <div className="main-container" ref={containerRef}>
-            <InAppBrowserBanner />
+            <GoogleDisabledModal
+                isOpen={showGoogleDisabledModal}
+                onClose={() => setShowGoogleDisabledModal(false)}
+                showCreateAccountOption={true}
+            />
 
             {showUsernameModal && (
                 <div className="username-modal-overlay">

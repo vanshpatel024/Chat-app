@@ -52,3 +52,4 @@ export async function processGoogleUserAuth(user, { navigate, showNotification }
     navigate("/home", { replace: true });
     return true;
 }
+
