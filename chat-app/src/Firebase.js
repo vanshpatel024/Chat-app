@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,6 +20,17 @@ if (!firebaseConfig.apiKey) {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+// Use local persistence by default so auth sessions persist across refreshes and tabs
+if (typeof window !== 'undefined') {
+    setPersistence(auth, browserLocalPersistence).catch(() => {});
+    // Pre-warm the popup resolver so the auth iframe is cached upfront
+    // to prevent browser popup-blocking caused by delayed iframe initialization
+    if (auth._popupRedirectResolver && typeof auth._popupRedirectResolver._initialize === 'function') {
+        auth._popupRedirectResolver._initialize(auth).catch(() => {});
+    }
+}
+
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const db = getFirestore(app);
