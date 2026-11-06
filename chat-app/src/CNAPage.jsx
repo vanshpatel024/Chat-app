@@ -37,12 +37,13 @@ function CNAPage() {
     
     const handleGoogleSignIn = async () => {
         try {
+            // Trigger popup synchronously within the user gesture to avoid browser popup blockers
+            const result = await signInWithPopup(auth, googleProvider);
+
             showLoading();
 
-            const persistence = browserSessionPersistence;
-            await setPersistence(auth, persistence);
+            await setPersistence(auth, browserSessionPersistence);
 
-            const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
             const existingUser = await getUserByEmail(user.email);
@@ -73,7 +74,15 @@ function CNAPage() {
 
         } catch (error) {
             console.error("Google login error:", error);
-            showNotification("Google login failed. Try again.");
+            if (error.code === 'auth/popup-blocked') {
+                showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                showNotification("Google sign-in was canceled.");
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                // Ignore multiple rapid clicks
+            } else {
+                showNotification("Google login failed. Try again.");
+            }
         } finally {
             hideLoading();
         }

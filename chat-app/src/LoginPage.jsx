@@ -80,13 +80,16 @@ function LoginPage() {
 
     const handleGoogleLogIn = async () => {
         try {
-            showLoading();
             setIsManualLogin(true);
+
+            // Trigger popup synchronously within the user gesture to avoid browser popup blockers
+            const result = await signInWithPopup(auth, googleProvider);
+
+            showLoading();
 
             const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
             await setPersistence(auth, persistence);
 
-            const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
 
             const existingUser = await getUserByEmail(user.email);
@@ -114,7 +117,15 @@ function LoginPage() {
 
         } catch (error) {
             console.error("Google login error:", error);
-            showNotification("Google login failed. Try again.");
+            if (error.code === 'auth/popup-blocked') {
+                showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                showNotification("Google sign-in was canceled.");
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                // Ignore multiple rapid clicks
+            } else {
+                showNotification("Google login failed. Try again.");
+            }
         } finally {
             hideLoading();
         }
