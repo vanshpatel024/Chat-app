@@ -50,7 +50,11 @@ function CNAPage() {
                 showNotification("This account was registered using Email/Password. Please login using email.");
 
                 if (auth.currentUser) {
-                    await auth.currentUser.unlink("google.com");
+                    try {
+                        await auth.currentUser.unlink("google.com");
+                    } catch {
+                        // Ignore unlink failure if not linked or only provider
+                    }
                     await auth.signOut();
                 }
                 isProcessingUser.current = false;
