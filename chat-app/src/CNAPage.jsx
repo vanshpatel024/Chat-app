@@ -58,10 +58,18 @@ function CNAPage() {
             }
 
             if (!existingUser) {
-                setTempGoogleUser(user);
-                setShowUsernameModal(true);
-                isProcessingUser.current = false;
-                return;
+                // Auto-generate unique username so the app starts immediately
+                const baseUsername = user.displayName?.trim() || user.email.split('@')[0];
+                let chosenUsername = baseUsername;
+                const taken = await isUsernameTaken(chosenUsername);
+                if (taken) {
+                    chosenUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+                }
+
+                await createUserProfile(user.uid, user.email, chosenUsername);
+                if (auth.currentUser) {
+                    await updateProfile(auth.currentUser, { displayName: chosenUsername });
+                }
             }
 
             localStorage.setItem("userEmail", user.email);
@@ -119,7 +127,8 @@ function CNAPage() {
         handleRedirectResult();
     }, [processGoogleUser, showLoading, hideLoading, showNotification]);
 
-    const handleGoogleSignIn = async () => {
+    const handleGoogleSignIn = async (e) => {
+        if (e && e.preventDefault) e.preventDefault();
         try {
             let result = null;
             try {
@@ -368,7 +377,7 @@ function CNAPage() {
                         <span>or</span>
                     </div>
 
-                    <button className="google-button" onClick={handleGoogleSignIn}>
+                    <button type="button" className="google-button" onClick={handleGoogleSignIn}>
                         <img className="google-icon" src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
                         Sign in with Google
                     </button>

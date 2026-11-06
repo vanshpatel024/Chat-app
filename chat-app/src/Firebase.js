@@ -2,9 +2,20 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+const getAuthDomain = () => {
+    if (typeof window !== "undefined" && window.location) {
+        const hostname = window.location.hostname;
+        // In production on Vercel or custom domain, route auth to same-origin proxy (/__/auth)
+        if (hostname && hostname !== "localhost" && hostname !== "127.0.0.1") {
+            return window.location.host;
+        }
+    }
+    return import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+};
+
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    authDomain: getAuthDomain(),
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -21,6 +32,7 @@ if (!firebaseConfig.apiKey) {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 const db = getFirestore(app);
 
 export { auth, googleProvider, db };
