@@ -1,10 +1,16 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
+import {
+    initializeAuth,
+    indexedDBLocalPersistence,
+    browserLocalPersistence,
+    browserPopupRedirectResolver,
+    GoogleAuthProvider
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "chat-app-psi-seven-47.vercel.app",
     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -19,20 +25,15 @@ if (!firebaseConfig.apiKey) {
 }
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
-// Use local persistence by default so auth sessions persist across refreshes and tabs
-if (typeof window !== 'undefined') {
-    setPersistence(auth, browserLocalPersistence).catch(() => {});
-    // Pre-warm the popup resolver so the auth iframe is cached upfront
-    // to prevent browser popup-blocking caused by delayed iframe initialization
-    if (auth._popupRedirectResolver && typeof auth._popupRedirectResolver._initialize === 'function') {
-        auth._popupRedirectResolver._initialize(auth).catch(() => {});
-    }
-}
+// Initialize Firebase Auth the supported, standard way with IndexedDB + localStorage persistence and popup resolver
+export const auth = initializeAuth(app, {
+    persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    popupRedirectResolver: browserPopupRedirectResolver,
+});
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const db = getFirestore(app);
 
-export { auth, googleProvider, db };
+export { googleProvider, db };

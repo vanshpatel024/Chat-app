@@ -175,16 +175,44 @@ stateDiagram-v2
 
 | File Path | Original Behavior | Updated Behavior | Rationale |
 |---|---|---|---|
-| [`chat-app/src/Firebase.js`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/Firebase.js) | Standard initialization without persistence configuration or pre-warming. | Sets `browserLocalPersistence` immediately and calls `auth._popupRedirectResolver._initialize(auth)` on browser startup. | Ensures session persistence survives across tabs/refreshes and pre-loads the auth iframe to eliminate popup latency. |
-| [`chat-app/src/LoginPage.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/LoginPage.jsx) | `async handleGoogleLogIn` with pre-call state updates and silent fallback to `signInWithRedirect`. | Pure synchronous handler executing `signInWithPopup(auth, googleProvider)` on line 1. Removed redirect fallback. Sanitized username spaces. Added explicit error alerts. | Eliminates popup-blocking delays and prevents the browser from entering the partitioned-storage redirect black hole. |
-| [`chat-app/src/CNAPage.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/CNAPage.jsx) | Same async delay and redirect fallback as login page. Unsafe `currentUser.unlink("google.com")`. | Synchronous `signInWithPopup`. Safe `try...catch` wrapper around provider unlinking. Sanitized auto-usernames. | Prevents registration crashes and maintains complete parity with `LoginPage.jsx`. |
+| [`chat-app/src/Firebase.js`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/Firebase.js) | Called `getAuth(app)` with runtime `setPersistence()` and private `_initialize` calls. | Uses supported `initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence], popupRedirectResolver: browserPopupRedirectResolver })`. Configures `authDomain` via `VITE_FIREBASE_AUTH_DOMAIN` with `chat-app-psi-seven-47.vercel.app` fallback. | Standard v11 initialization sets persistence upfront and avoids private API regressions or race conditions. |
+| [`chat-app/src/authUtils.js`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/authUtils.js) | Non-existent; login post-auth logic was duplicated in `LoginPage.jsx` and `CNAPage.jsx`. | Shared module containing `processGoogleUserAuth` and `isInAppBrowser` user-agent detector. | Unifies post-auth business logic across popup and redirect paths and detects embedded webviews. |
+| [`chat-app/src/InAppBrowserBanner.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/InAppBrowserBanner.jsx) | Non-existent; in-app webviews failed with Google 403 or disallowed useragent. | Dismissible alert banner advising users to open the site in Chrome or Safari. | Google strictly blocks OAuth inside webviews (Instagram, TikTok, Facebook); provides clear user guidance. |
+| [`chat-app/src/LoginPage.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/LoginPage.jsx) | `async handleGoogleLogIn` with pre-call state updates and silent fallback. | Pure synchronous handler executing `signInWithPopup(auth, googleProvider)` on line 1. Graceful `signInWithRedirect` fallback. Silent ignore of user cancellations. Mount-level `getRedirectResult()`. | Eliminates popup-blocking delays, supports first-party redirect fallback, and handles all error codes properly. |
+| [`chat-app/src/CNAPage.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/CNAPage.jsx) | Same async delay as login page; duplicated post-auth logic. | Identical synchronous `signInWithPopup` + `signInWithRedirect` fallback pattern using shared `processGoogleUserAuth`. | Prevents registration crashes and maintains complete parity with `LoginPage.jsx`. |
 | [`chat-app/src/FirestoreUtils.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/FirestoreUtils.jsx) | Basic queries for profile creation and verification. | Maintained consistent schema fields (`SiginMethod: "google"`, `username`, `email`, `uid`). | Consistent indexing for username and email uniqueness queries. |
 | [`chat-app/src/ProtectedRoute.jsx`](file:///e:/Visual%20Studio%20Codes/Chat%20App/chat-app/src/ProtectedRoute.jsx) | Navigates to `/login` if auth state resolves to null; shows loading spinner while resolving. | Maintained seamless route guard with notification deduplication. | Prevents unauthenticated flashes while Firebase restores the local session. |
-| [`vercel.json`](file:///e:/Visual%20Studio%20Codes/Chat%20App/vercel.json) | Reverse proxy for `/__/auth/:path*` to `https://chat-app-6a105.firebaseapp.com/__/auth/:path*` and SPA rewrite `/(.*)` to `/index.html`. | Configured to support first-party proxy routes and React Router client routing. | Eliminates 404 errors on browser refresh and supports future proxy auth if needed. |
+| [`vercel.json`](file:///e:/Visual%20Studio%20Codes/Chat%20App/vercel.json) | Reverse proxy for `/__/auth/:path*` to `https://chat-app-6a105.firebaseapp.com/__/auth/:path*` and SPA rewrite `/(.*)` to `/index.html`. | Configured to support first-party proxy routes and React Router client routing. | Eliminates 404 errors on browser refresh and handles first-party auth proxying. |
+| [`.env.example`](file:///e:/Visual%20Studio%20Codes/Chat%20App/.env.example) | Listed generic `.firebaseapp.com` auth domain. | Updated with documentation for `VITE_FIREBASE_AUTH_DOMAIN=chat-app-psi-seven-47.vercel.app`. | Clarifies first-party auth proxy setup for Vercel production deployment. |
 
 ---
 
-## 6. Firestore Database Schema Reference
+## 6. Required Manual Configuration Steps (Google Cloud & Firebase)
+
+To ensure both popup sign-in and the first-party redirect fallback work seamlessly in production:
+
+### 1. Whitelist Redirect URI in Google Cloud Console
+1. Navigate to the [Google Cloud Console Credentials Page](https://console.cloud.google.com/apis/credentials).
+2. Under **OAuth 2.0 Client IDs**, select the Web client used by Firebase (e.g., `Web client (auto created by Google Service)`).
+3. Under **Authorized redirect URIs**, click **ADD URI** and add:
+   - `https://chat-app-psi-seven-47.vercel.app/__/auth/handler`
+   *(Ensure the default `https://chat-app-6a105.firebaseapp.com/__/auth/handler` remains in the list as well).*
+4. Click **Save**.
+
+### 2. Verify Authorized Domains in Firebase Console
+1. Navigate to the [Firebase Console](https://console.firebase.google.com/) -> Select project `chat-app-6a105`.
+2. Go to **Authentication** -> **Settings** tab -> **Authorized domains**.
+3. Confirm that `chat-app-psi-seven-47.vercel.app` is listed. If not, click **Add domain** and enter `chat-app-psi-seven-47.vercel.app`.
+
+### 3. Update Vercel Environment Variables
+1. Go to your [Vercel Dashboard](https://vercel.com/) -> Select the `Chat-app` project -> **Settings** -> **Environment Variables**.
+2. Set or update:
+   - `VITE_FIREBASE_AUTH_DOMAIN` = `chat-app-psi-seven-47.vercel.app`
+3. Trigger a redeploy (or push to `main`).
+
+---
+
+## 7. Firestore Database Schema Reference
 
 ### `users/{uid}` Document Structure
 ```json
@@ -229,3 +257,4 @@ If another agent continues work on this project, consider these architectural su
    - If redirect-based login (`signInWithRedirect`) is strictly required in the future, the project owner must visit [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials), locate the Web Client OAuth 2.0 ID, and add `https://chat-app-psi-seven-47.vercel.app/__/auth/handler` to **Authorized redirect URIs**.
 3. **Firestore Security Rules Audit**:
    - Ensure Firestore rules enforce `request.auth != null` on reads and `request.auth.uid == userId` on writes to prevent unauthorized modifications to user profile documents.
+

@@ -3,14 +3,15 @@ import { useNavigate, Link } from "react-router-dom";
 import './StyleSheets/LoginPage.css';
 import { useNotification } from './Notification';
 import { auth, googleProvider, db } from "./Firebase";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, getRedirectResult } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { collection, query, where, getDocs, setDoc, doc } from "firebase/firestore";
 import { useLoading } from './LoadingContext';
+import { processGoogleUserAuth } from './authUtils';
+import InAppBrowserBanner from './InAppBrowserBanner';
 
 import {
     createUserProfile,
-    isUsernameTaken,
-    getUserByEmail
+    isUsernameTaken
 } from './FirestoreUtils.jsx';
 
 function CNAPage() {
@@ -42,45 +43,10 @@ function CNAPage() {
         isProcessingUser.current = true;
 
         try {
-            const existingUser = await getUserByEmail(user.email);
-
-            // Block login if already registered with email
-            const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
-            if (existingUser && signMethod && signMethod !== "google") {
-                showNotification("This account was registered using Email/Password. Please login using email.");
-
-                if (auth.currentUser) {
-                    try {
-                        await auth.currentUser.unlink("google.com");
-                    } catch {
-                        // Ignore unlink failure if not linked or only provider
-                    }
-                    await auth.signOut();
-                }
+            const success = await processGoogleUserAuth(user, { navigate, showNotification });
+            if (!success) {
                 isProcessingUser.current = false;
-                return;
             }
-
-            if (!existingUser) {
-                // Auto-generate unique username so the app starts immediately
-                const baseUsername = user.displayName?.trim().replace(/\s+/g, '_') || user.email.split('@')[0];
-                let chosenUsername = baseUsername;
-                const taken = await isUsernameTaken(chosenUsername);
-                if (taken) {
-                    chosenUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
-                }
-
-                await createUserProfile(user.uid, user.email, chosenUsername);
-                if (auth.currentUser) {
-                    await updateProfile(auth.currentUser, { displayName: chosenUsername });
-                }
-            }
-
-            localStorage.setItem("userEmail", user.email);
-            localStorage.setItem("userPassword", "GOOGLE");
-
-            showNotification("Google login successful!");
-            navigate("/home", { replace: true });
         } catch (err) {
             console.error("Error processing Google user:", err);
             showNotification(`Sign-up error: ${err.message || 'Failed to process Google account'}`);
@@ -142,30 +108,39 @@ function CNAPage() {
     const handleGoogleSignIn = (e) => {
         if (e && e.preventDefault) e.preventDefault();
 
-        // Direct synchronous popup initiation within user gesture
+        // 1. Direct synchronous popup initiation within user gesture
         signInWithPopup(auth, googleProvider)
             .then(async (result) => {
                 if (!result || !result.user) return;
                 showLoading();
                 await processGoogleUser(result.user);
             })
-            .catch((error) => {
-                console.error("Google login error:", error);
-                if (error.code === 'auth/popup-closed-by-user') {
-                    return; // Normal user cancellation
+            .catch(async (error) => {
+                console.error("Google sign-in error:", error);
+                if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                    hideLoading();
+                    return; // Ignore silently and reset UI
                 }
                 if (error.code === 'auth/popup-blocked') {
-                    showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
-                    return;
+                    // Attempt fallback to signInWithRedirect using first-party authDomain
+                    try {
+                        showLoading();
+                        await signInWithRedirect(auth, googleProvider);
+                        return;
+                    } catch (redirectErr) {
+                        console.error("Redirect fallback error:", redirectErr);
+                        hideLoading();
+                        showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
+                        return;
+                    }
                 }
                 if (error.code === 'auth/unauthorized-domain') {
+                    hideLoading();
                     showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
                     return;
                 }
-                showNotification("Google login failed. Try again.");
-            })
-            .finally(() => {
                 hideLoading();
+                showNotification("Google login failed. Try again.");
             });
     };
 
@@ -287,6 +262,7 @@ function CNAPage() {
 
     return (
         <div className="main-container" ref={containerRef}>
+            <InAppBrowserBanner />
 
             {showUsernameModal && (
                 <div className="username-modal-overlay">

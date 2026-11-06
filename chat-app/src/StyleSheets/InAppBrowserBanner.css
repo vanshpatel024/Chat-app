@@ -1,0 +1,58 @@
+.in-app-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(185, 28, 28, 0.98));
+    color: #ffffff;
+    padding: 12px 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    animation: bannerSlideDown 0.3s ease-out;
+}
+
+.in-app-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.in-app-banner-icon {
+    font-size: 1.25rem;
+    color: #fef08a;
+    flex-shrink: 0;
+}
+
+.in-app-banner-text {
+    flex: 1;
+}
+
+.in-app-banner-close {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 8px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.in-app-banner-close:hover {
+    opacity: 1;
+}
+
+@keyframes bannerSlideDown {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
