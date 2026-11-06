@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import './StyleSheets/LoginPage.css';
 import { useNotification } from './Notification';
 import { auth, googleProvider, db } from "./Firebase";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, browserSessionPersistence, setPersistence } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, signInWithRedirect, getRedirectResult, browserSessionPersistence, setPersistence } from "firebase/auth";
 import { collection, query, where, getDocs, setDoc, doc } from "firebase/firestore";
 import { useLoading } from './LoadingContext';
 
@@ -35,51 +35,99 @@ function CNAPage() {
     //---------------------------------------------------------------------------------------------------------
 
     
+    const processGoogleUser = useCallback(async (user) => {
+        const existingUser = await getUserByEmail(user.email);
+
+        // Block login if already registered with email
+        const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
+        if (existingUser && signMethod && signMethod !== "google") {
+            showNotification("This account was registered using Email/Password. Please login using email.");
+
+            if (auth.currentUser) {
+                await auth.currentUser.unlink("google.com");
+                await auth.signOut();
+            }
+            return;
+        }
+
+        if (!existingUser) {
+            setTempGoogleUser(user);
+            setShowUsernameModal(true);
+            return;
+        }
+
+        localStorage.setItem("userEmail", user.email);
+        localStorage.setItem("userPassword", "GOOGLE");
+
+        showNotification("Google login successful!");
+        navigate("/home");
+    }, [navigate, showNotification]);
+
+    // Handle Google redirect result on page load
+    useEffect(() => {
+        const handleRedirectResult = async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result && result.user) {
+                    showLoading();
+                    await setPersistence(auth, browserSessionPersistence);
+                    await processGoogleUser(result.user);
+                }
+            } catch (error) {
+                console.error("Redirect auth error:", error);
+                if (error.code === 'auth/unauthorized-domain') {
+                    showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
+                } else {
+                    showNotification("Google sign-in failed. Try again.");
+                }
+            } finally {
+                hideLoading();
+            }
+        };
+
+        handleRedirectResult();
+    }, [processGoogleUser, showLoading, hideLoading, showNotification]);
+
     const handleGoogleSignIn = async () => {
         try {
-            // Trigger popup synchronously within the user gesture to avoid browser popup blockers
-            const result = await signInWithPopup(auth, googleProvider);
+            let result = null;
+            try {
+                result = await signInWithPopup(auth, googleProvider);
+            } catch (popupErr) {
+                // If popup is blocked by browser, webview, or security policy, fall back to redirect
+                if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+                    showLoading();
+                    showNotification("Popup blocked. Redirecting to Google Sign-in...");
+                    await signInWithRedirect(auth, googleProvider);
+                    return;
+                }
+                throw popupErr;
+            }
+
+            if (!result || !result.user) return;
 
             showLoading();
 
             await setPersistence(auth, browserSessionPersistence);
 
-            const user = result.user;
-
-            const existingUser = await getUserByEmail(user.email);
-
-            // Block login if already registered with email
-            const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
-            if (existingUser && signMethod && signMethod !== "google") {
-                showNotification("This account was registered using Email/Password. Please login using email.");
-
-                if (auth.currentUser) {
-                    await auth.currentUser.unlink("google.com");
-                    await auth.signOut();
-                }
-                return;
-            }
-
-            if (!existingUser) {
-                setTempGoogleUser(user);
-                setShowUsernameModal(true);
-                return;
-            }
-
-            localStorage.setItem("userEmail", user.email);
-            localStorage.setItem("userPassword", "GOOGLE");
-
-            showNotification("Google login successful!");
-            navigate("/home");
+            await processGoogleUser(result.user);
 
         } catch (error) {
             console.error("Google login error:", error);
             if (error.code === 'auth/popup-blocked') {
-                showNotification("Popup blocked! Please allow popups for this site in your browser's address bar and try again.");
+                try {
+                    showLoading();
+                    showNotification("Redirecting to Google Sign-in...");
+                    await signInWithRedirect(auth, googleProvider);
+                    return;
+                } catch (redirectErr) {
+                    console.error("Redirect error:", redirectErr);
+                    showNotification("Sign-in popup and redirect were blocked by your browser.");
+                }
             } else if (error.code === 'auth/popup-closed-by-user') {
                 showNotification("Google sign-in was canceled.");
-            } else if (error.code === 'auth/cancelled-popup-request') {
-                // Ignore multiple rapid clicks
+            } else if (error.code === 'auth/unauthorized-domain') {
+                showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
             } else {
                 showNotification("Google login failed. Try again.");
             }
