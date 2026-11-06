@@ -22,13 +22,13 @@ function ProtectedRoute({ children }) {
             unsubscribe();
             hideLoading();
         };
-    }, []);
+    }, [hideLoading, showLoading]);
 
     useEffect(() => {
         if (isAuthenticated) {
             showNotification("Auto Login Successful!");
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, showNotification]);
 
     if (isAuthenticated === null) {
         return null;

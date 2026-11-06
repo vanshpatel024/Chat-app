@@ -12,6 +12,12 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+if (!firebaseConfig.apiKey) {
+    console.error(
+        "[Firebase] Missing VITE_FIREBASE_API_KEY. Please ensure environment variables are configured in .env locally or in your deployment dashboard (e.g. Vercel)."
+    );
+}
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();

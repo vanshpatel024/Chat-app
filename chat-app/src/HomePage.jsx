@@ -6,7 +6,7 @@ import { useLoading } from './LoadingContext';
 import "./StyleSheets/HomePage.css";
 import ChatBox from "./ChatBox";
 import Friends from "./Friends";
-import { signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile } from "firebase/auth";
 import {
     query,
     where,
@@ -32,7 +32,7 @@ function HomePage() {
 
     const [messageText, setMessageText] = useState("");
 
-    const currentUid = auth.currentUser.uid;
+    const currentUid = auth.currentUser?.uid;
 
     const typingTimeout = useRef(null);
     const lastTypingState = useRef(false);
@@ -130,6 +130,7 @@ function HomePage() {
     //fetching all the friend requests
     useEffect(() => {
         const fetchRequests = async () => {
+            if (!currentUid) return;
             const requestsRef = collection(db, "users", currentUid, "friendRequests");
             const snapshot = await getDocs(requestsRef);
             const requests = await Promise.all(snapshot.docs.map(async (docSnap) => {
@@ -140,10 +141,11 @@ function HomePage() {
         };
 
         if (showRequestsPopup) fetchRequests();
-    }, [showRequestsPopup]);
+    }, [showRequestsPopup, currentUid]);
 
     //accepting friend request
     const handleAccept = async (senderId) => {
+        if (!currentUid) return;
         await setDoc(doc(db, "users", currentUid, "friends", senderId), { addedAt: serverTimestamp() });
         await setDoc(doc(db, "users", senderId, "friends", currentUid), { addedAt: serverTimestamp() });
 
@@ -157,6 +159,7 @@ function HomePage() {
 
     //rejecting friend request
     const handleReject = async (senderId) => {
+        if (!currentUid) return;
         await deleteDoc(doc(db, "users", currentUid, "friendRequests", senderId));
         setIncomingRequests(prev => prev.filter(u => u.id !== senderId));
         showNotification("Friend request rejected.");
@@ -198,7 +201,7 @@ function HomePage() {
                     const data = doc.data();
                     return (
                         data.username?.toLowerCase().includes(searchLower) &&
-                        doc.id !== auth.currentUser.uid &&
+                        doc.id !== currentUid &&
                         !friendIds.includes(doc.id) // 👈 filter already added
                     );
                 })
@@ -208,14 +211,13 @@ function HomePage() {
         }, 300);
 
         return () => clearTimeout(delayDebounce);
-    }, [searchUsername, friendIds]);
+    }, [searchUsername, friendIds, currentUid]);
 
     //function to handle adding a friend
     const handleAddFriend = async (friendId) => {
+        if (!currentUid) return;
         const yourRequestRef = doc(db, "users", currentUid, "friendRequests", friendId);
         const theirRequestRef = doc(db, "users", friendId, "friendRequests", currentUid);
-
-        const mutualCheck = await getDoc(theirRequestRef);
 
         const alreadySentSnap = await getDoc(theirRequestRef);
         if (alreadySentSnap.exists()) {
@@ -250,8 +252,8 @@ function HomePage() {
 
     //clicking on a firend's button on the left panel
     const handleFriendClick = async (friendUser) => {
+        if (!currentUid) return;
         setActiveChatUser(friendUser);
-        const currentUid = auth.currentUser.uid;
         const friendUid = friendUser.id;
 
         // Generate consistent Chat ID
@@ -308,12 +310,12 @@ function HomePage() {
 
     //function to send message
     const handleSendMessage = async () => {
-        if (!messageText.trim() || !chatId) return;
+        if (!messageText.trim() || !chatId || !currentUid) return;
 
         const messageRef = collection(db, "chats", chatId, "messages");
         await addDoc(messageRef, {
             text: messageText,
-            sender: auth.currentUser.uid,
+            sender: currentUid,
             timestamp: serverTimestamp(),
         });
 
@@ -322,9 +324,8 @@ function HomePage() {
 
     //function to remove friend
     const handleRemoveFriend = async () => {
-        if (!activeChatUser) return;
+        if (!activeChatUser || !currentUid) return;
 
-        const currentUid = auth.currentUser.uid;
         const friendUid = activeChatUser.id;
 
         try {
@@ -402,8 +403,9 @@ function HomePage() {
             //update username in Firestore
             const userDocRef = doc(db, "users", user.uid);
             await updateDoc(userDocRef, {
-                username: newUsername.trim(),
+                username: trimmedUsername,
             });
+            await updateProfile(user, { displayName: trimmedUsername });
 
             //success
             showNotification("Username changed successfully!");
@@ -745,7 +747,7 @@ function HomePage() {
                                 </div>
                                 <div className="profile-field">
                                     <label>Account Created:</label>
-                                    <span>{new Date(auth.currentUser?.metadata.creationTime).toLocaleDateString()}</span>
+                                    <span>{auth.currentUser?.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : "N/A"}</span>
                                 </div>
                             </div>
 
@@ -782,7 +784,6 @@ function HomePage() {
                                     onFriendClick={handleFriendClick}
                                     selectedFriend={activeChatUser}
                                     refreshTrigger={friendRefreshToggle}
-                                    setRefreshTrigger={setFriendRefreshToggle}
                                 />
 
                             </div>

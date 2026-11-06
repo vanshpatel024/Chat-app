@@ -1,4 +1,4 @@
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import React from "react";
 import {
     doc,
@@ -37,7 +37,7 @@ function ChatBox({ chatId }) {
     };
 
     //mouse leave check for delete button
-    const runCheckHoverTimeout = () => {
+    const runCheckHoverTimeout = useCallback(() => {
         const timeout = setTimeout(() => {
             if (!isHoveringDeleteButton) {
                 setFadingOut(true);
@@ -49,12 +49,12 @@ function ChatBox({ chatId }) {
         }, 1000);
     
         return timeout;
-    };
+    }, [isHoveringDeleteButton]);
 
     useEffect(() => {
         const timeout = runCheckHoverTimeout();
         return () => clearTimeout(timeout);
-    }, [isHoveringDeleteButton]);
+    }, [runCheckHoverTimeout]);
     
     
     useEffect(() => {
@@ -82,7 +82,7 @@ function ChatBox({ chatId }) {
         const unsubscribeTyping = onSnapshot(typingRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const friendId = chatId.split("_").find(id => id !== auth.currentUser.uid);
+                const friendId = chatId.split("_").find(id => id !== auth.currentUser?.uid);
                 setTyping(data[friendId] || false);
             }
         });
@@ -125,7 +125,7 @@ function ChatBox({ chatId }) {
                         minute: '2-digit'
                     });
 
-                    const isSender = msg.sender === auth.currentUser.uid;
+                    const isSender = msg.sender === auth.currentUser?.uid;
                     const isHovered = hoveredMsgId === msg.id || hoveredMsgId === index;
 
                     return (
@@ -154,7 +154,7 @@ function ChatBox({ chatId }) {
                                 <div className="message-text">{msg.text}</div>
 
                                 {timestamp && (
-                                    <div className={`message-time ${msg.sender === auth.currentUser.uid ? "sent" : "received"}`}>
+                                    <div className={`message-time ${msg.sender === auth.currentUser?.uid ? "sent" : "received"}`}>
                                         {formattedTime}
                                     </div>
                                 )}

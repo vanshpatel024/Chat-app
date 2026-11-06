@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 import './StyleSheets/Notification.css';
 
 const NotificationContext = createContext();
@@ -23,7 +23,7 @@ export function NotificationProvider({ children }) {
             return;
         }
 
-        if (lastMessage.current === "Login successful!" && nextMessage === "Auto Login Successful!") {
+        if ((lastMessage.current === "Login successful!" || lastMessage.current === "Google login successful!") && nextMessage === "Auto Login Successful!") {
             processQueue();
             return;
         }

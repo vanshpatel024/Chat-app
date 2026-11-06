@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -12,15 +12,13 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "./Firebase";
 import "./StyleSheets/Friends.css";
-import { AnimatePresence, motion } from "framer-motion";
-import { useNotification } from "./Notification";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 
-function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrigger }) {
+function Friends({ onFriendClick, selectedFriend, refreshTrigger }) {
 
   const [users, setUsers] = useState([]);
   const currentUserId = auth.currentUser?.uid;
-  const listenersRef = React.useRef({});
-  const { showNotification } = useNotification();
+  const listenersRef = useRef({});
 
   //fetch friends and their last messages
   useEffect(() => {
@@ -93,6 +91,8 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
   }, [currentUserId, selectedFriend, refreshTrigger]);
 
   //realtime updates for last message and status
+  const userIdsKey = users.map(u => u.id).join(",");
+
   useEffect(() => {
     if (!currentUserId){
       return;
@@ -110,6 +110,11 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
         const data = doc?.data();
 
         if (!data) {
+          setUsers(prev =>
+            prev.map(u =>
+              u.id === friendId ? { ...u, lastMessage: { text: "", timestamp: 0 } } : u
+            )
+          );
           return;
         }
 
@@ -120,6 +125,7 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
 
         setUsers(prev => {
           const existing = prev.find(u => u.id === friendId);
+          if (!existing) return prev;
 
           const isSameMessage =
             existing.lastMessage?.text === newMessage.text &&
@@ -144,7 +150,7 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
       Object.values(listenersRef.current).forEach(unsub => unsub());
       listenersRef.current = {};
     };
-  }, [currentUserId, users.map(u => u.id).join(",")]); // Ensure the effect runs when users change  
+  }, [currentUserId, userIdsKey, users]); // Ensure the effect runs when users change  
 
   //set online/offline status
   useEffect(() => {
@@ -195,7 +201,7 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
     <div className="friends-list">
       <AnimatePresence>
         {users.map((user) => (
-          <motion.div
+          <Motion.div
             key={user.id}
             layout
             initial={{ opacity: 0, y: 20 }}
@@ -217,7 +223,7 @@ function Friends({ onFriendClick, selectedFriend, refreshTrigger, setRefreshTrig
                   : "No messages yet"}
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
         ))}
       </AnimatePresence>
     </div>

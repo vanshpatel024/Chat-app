@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import './StyleSheets/LoginPage.css';
 import { useNotification } from './Notification';
-import { auth, googleProvider, db } from "./Firebase";
-import { signInWithPopup, signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
+import { auth, googleProvider } from "./Firebase";
+import { signInWithPopup, signInWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, updateProfile } from "firebase/auth";
 import { useLoading } from './LoadingContext';
-import { collection, query, where, getDocs } from "firebase/firestore";
 
 import {
-    getUserProfile,
     createUserProfile,
     isUsernameTaken,
     getUserByEmail
@@ -78,7 +76,7 @@ function LoginPage() {
             tryAutoLogin();
         }
         
-    }, [hasAutoLoggedIn, isManualLogin, navigate]);
+    }, [hasAutoLoggedIn, isManualLogin, navigate, showLoading, hideLoading, showNotification]);
 
     const handleGoogleLogIn = async () => {
         try {
@@ -94,7 +92,8 @@ function LoginPage() {
             const existingUser = await getUserByEmail(user.email);
 
             // Block login if already registered with email
-            if (existingUser && existingUser.SiginMethod !== "google") {
+            const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
+            if (existingUser && signMethod && signMethod !== "google") {
                 showNotification("This account was registered using Email/Password. Please login using email.");
 
                 await auth.signOut();
@@ -233,7 +232,7 @@ function LoginPage() {
                     container.appendChild(shootingStar);
 
                     setTimeout(() => {
-                        container.removeChild(shootingStar);
+                        shootingStar.remove();
                     }, 3000);
                 }, delay);
             }
@@ -278,6 +277,12 @@ function LoginPage() {
                                     }
 
                                     await createUserProfile(tempGoogleUser.uid, tempGoogleUser.email, trimmed);
+                                    if (auth.currentUser) {
+                                        await updateProfile(auth.currentUser, { displayName: trimmed });
+                                    }
+
+                                    localStorage.setItem("userEmail", tempGoogleUser.email);
+                                    localStorage.setItem("userPassword", "GOOGLE");
 
                                     showNotification("Google login successful!");
                                     setShowUsernameModal(false);
@@ -377,7 +382,7 @@ function LoginPage() {
 
                         </div>
 
-                        <a href="/create">Need an account? Sign Up</a>
+                        <Link to="/create">Need an account? Sign Up</Link>
 
                     </>
                 )}

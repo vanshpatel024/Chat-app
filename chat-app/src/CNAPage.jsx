@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import './StyleSheets/LoginPage.css';
 import { useNotification } from './Notification';
 import { auth, googleProvider, db } from "./Firebase";
@@ -8,7 +8,6 @@ import { collection, query, where, getDocs, setDoc, doc } from "firebase/firesto
 import { useLoading } from './LoadingContext';
 
 import {
-    getUserProfile,
     createUserProfile,
     isUsernameTaken,
     getUserByEmail
@@ -49,12 +48,14 @@ function CNAPage() {
             const existingUser = await getUserByEmail(user.email);
 
             // Block login if already registered with email
-            if (existingUser && existingUser.loginMethod !== "google") {
+            const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
+            if (existingUser && signMethod && signMethod !== "google") {
                 showNotification("This account was registered using Email/Password. Please login using email.");
 
-                await auth.currentUser.unlink("google.com");
-
-                await auth.signOut();
+                if (auth.currentUser) {
+                    await auth.currentUser.unlink("google.com");
+                    await auth.signOut();
+                }
                 return;
             }
 
@@ -182,7 +183,7 @@ function CNAPage() {
                     container.appendChild(shootingStar);
 
                     setTimeout(() => {
-                        container.removeChild(shootingStar);
+                        shootingStar.remove();
                     }, 3000);
                 }, delay);
             }
@@ -226,6 +227,12 @@ function CNAPage() {
                                     }
 
                                     await createUserProfile(tempGoogleUser.uid, tempGoogleUser.email, trimmed);
+                                    if (auth.currentUser) {
+                                        await updateProfile(auth.currentUser, { displayName: trimmed });
+                                    }
+
+                                    localStorage.setItem("userEmail", tempGoogleUser.email);
+                                    localStorage.setItem("userPassword", "GOOGLE");
 
                                     showNotification("Google login successful!");
                                     setShowUsernameModal(false);
@@ -283,7 +290,7 @@ function CNAPage() {
 
                 </div>
 
-                <a href="/">Already have an account? Log In</a>
+                <Link to="/login">Already have an account? Log In</Link>
 
             </div>
 
