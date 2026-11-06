@@ -59,8 +59,34 @@ git clone https://github.com/vanshpatel024/Chat-app.git
 # Navigate into the project directory
 cd Chat-app
 
-# Install dependencies
+# Configure environment variables (copy .env.example)
+cp .env.example chat-app/.env
+# Fill in your Firebase configuration keys in chat-app/.env
+
+# Install dependencies (from root or chat-app)
+cd chat-app
 npm install
 
 # Start the development server
 npm run dev
+
+# Run automated tests
+npm test
+```
+
+## 🌐 Production Deployment (Vercel)
+
+To deploy to Vercel:
+
+1. Import the repository into **Vercel**.
+2. **Framework Preset**: Vite
+3. **Root Directory**: `chat-app` (or leave as `/` — root `vercel.json` and `package.json` handle both).
+4. Add the following **Environment Variables** in the Vercel Dashboard (**Project Settings → Environment Variables**):
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+   - `VITE_FIREBASE_MEASUREMENT_ID`
+5. Click **Deploy**.
