@@ -42,29 +42,59 @@ function LoginPage() {
 
     
     // Process authenticated Google user
+    const isProcessingUser = useRef(false);
+
     const processGoogleUser = useCallback(async (user) => {
-        const existingUser = await getUserByEmail(user.email);
+        if (!user || isProcessingUser.current) return;
+        isProcessingUser.current = true;
 
-        // Block login if already registered with email
-        const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
-        if (existingUser && signMethod && signMethod !== "google") {
-            showNotification("This account was registered using Email/Password. Please login using email.");
-            await auth.signOut();
-            return;
+        try {
+            const existingUser = await getUserByEmail(user.email);
+
+            // Block login if already registered with email
+            const signMethod = existingUser?.SiginMethod || existingUser?.loginMethod;
+            if (existingUser && signMethod && signMethod !== "google") {
+                showNotification("This account was registered using Email/Password. Please login using email.");
+                await auth.signOut();
+                isProcessingUser.current = false;
+                return;
+            }
+
+            if (!existingUser) {
+                setTempGoogleUser(user);
+                setShowUsernameModal(true);
+                isProcessingUser.current = false;
+                return;
+            }
+
+            localStorage.setItem("userEmail", user.email);
+            localStorage.setItem("userPassword", "GOOGLE");
+
+            showNotification("Google login successful!");
+            navigate("/home");
+        } catch (err) {
+            console.error("Error processing Google user:", err);
+            isProcessingUser.current = false;
         }
-
-        if (!existingUser) {
-            setTempGoogleUser(user);
-            setShowUsernameModal(true);
-            return;
-        }
-
-        localStorage.setItem("userEmail", user.email);
-        localStorage.setItem("userPassword", "GOOGLE");
-
-        showNotification("Google login successful!");
-        navigate("/home");
     }, [navigate, showNotification]);
+
+    // Listen to Firebase Auth state directly (catches return from Google redirect or restored session)
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            if (user && !hasAutoLoggedIn) {
+                showLoading();
+                try {
+                    await processGoogleUser(user);
+                } catch (err) {
+                    console.error("Auth state user error:", err);
+                } finally {
+                    hideLoading();
+                }
+            }
+        });
+
+        return () => unsubscribe();
+    }, [hasAutoLoggedIn, processGoogleUser, showLoading, hideLoading]);
 
     // Handle Google redirect result on page load
     useEffect(() => {
@@ -80,7 +110,7 @@ function LoginPage() {
                 console.error("Redirect auth error:", error);
                 if (error.code === 'auth/unauthorized-domain') {
                     showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
-                } else {
+                } else if (error.code !== 'auth/credential-already-in-use') {
                     showNotification("Google sign-in failed. Try again.");
                 }
             } finally {
@@ -136,10 +166,9 @@ function LoginPage() {
             try {
                 result = await signInWithPopup(auth, googleProvider);
             } catch (popupErr) {
-                // If popup is blocked by browser, webview, or security policy, fall back to redirect
+                // If popup is blocked by browser, webview, or security policy, seamlessly fall back to redirect without popup blocked message
                 if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
                     showLoading();
-                    showNotification("Popup blocked. Redirecting to Google Sign-in...");
                     await signInWithRedirect(auth, googleProvider);
                     return;
                 }
@@ -160,15 +189,13 @@ function LoginPage() {
             if (error.code === 'auth/popup-blocked') {
                 try {
                     showLoading();
-                    showNotification("Redirecting to Google Sign-in...");
                     await signInWithRedirect(auth, googleProvider);
                     return;
                 } catch (redirectErr) {
                     console.error("Redirect error:", redirectErr);
-                    showNotification("Sign-in popup and redirect were blocked by your browser.");
                 }
             } else if (error.code === 'auth/popup-closed-by-user') {
-                showNotification("Google sign-in was canceled.");
+                // User closed popup; do not display error
             } else if (error.code === 'auth/unauthorized-domain') {
                 showNotification("This domain is not authorized in Firebase Console. Please add it under Authorized Domains.");
             } else {
